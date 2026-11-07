@@ -18,14 +18,12 @@ export default class Renderer {
   constructor(_options = {}) {
     this.experience = new Experience();
     this.webglElement = this.experience.webglElement;
-    this.cssArcadeMachine = this.experience.cssArcadeMachine;
     this.cssLeftMonitor = this.experience.cssLeftMonitor;
     this.cssRightMonitor = this.experience.cssRightMonitor;
     this.config = this.experience.config;
     this.sizes = this.experience.sizes;
     this.scene = this.experience.scene;
     this.camera = this.experience.camera;
-    this.cssArcadeMachineScene = this.experience.cssArcadeMachineScene;
     this.cssLeftMonitorScene = this.experience.cssLeftMonitorScene;
     this.cssRightMonitorScene = this.experience.cssRightMonitorScene;
     this.usePostprocess = true;
@@ -55,11 +53,6 @@ export default class Renderer {
 
     this.webglElement.appendChild(this.instance.domElement);
 
-    this.cssArcadeMachineInstance = new CSS3DRenderer();
-    this.cssArcadeMachineInstance.setSize(this.sizes.width, this.sizes.height);
-    this.cssArcadeMachineInstance.domElement.style.position = "absolute";
-    this.cssArcadeMachineInstance.domElement.style.top = "0px";
-
     this.cssLeftMonitorInstance = new CSS3DRenderer();
     this.cssLeftMonitorInstance.setSize(this.sizes.width, this.sizes.height);
     this.cssLeftMonitorInstance.domElement.style.position = "absolute";
@@ -70,7 +63,6 @@ export default class Renderer {
     this.cssRightMonitorInstance.domElement.style.position = "absolute";
     this.cssRightMonitorInstance.domElement.style.top = "0px";
 
-    this.cssArcadeMachine.appendChild(this.cssArcadeMachineInstance.domElement);
     this.cssLeftMonitor.appendChild(this.cssLeftMonitorInstance.domElement);
     this.cssRightMonitor.appendChild(this.cssRightMonitorInstance.domElement);
   }
@@ -128,10 +120,6 @@ export default class Renderer {
     // Instance
     this.instance.setSize(this.config.width, this.config.height);
     this.instance.setPixelRatio(this.config.pixelRatio);
-    this.cssArcadeMachineInstance.setSize(
-      this.config.width,
-      this.config.height
-    );
     this.cssLeftMonitorInstance.setSize(this.config.width, this.config.height);
     this.cssRightMonitorInstance.setSize(this.config.width, this.config.height);
 
@@ -146,10 +134,6 @@ export default class Renderer {
     } else {
       this.instance.render(this.scene, this.camera.instance);
     }
-    this.cssArcadeMachineInstance.render(
-      this.cssArcadeMachineScene,
-      this.camera.instance
-    );
     this.cssLeftMonitorInstance.render(
       this.cssLeftMonitorScene,
       this.camera.instance

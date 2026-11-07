@@ -2,14 +2,13 @@ import EventEmitter from "./Utils/EventEmitter.js";
 import Experience from "./Experience.js";
 import Baked from "./Baked.js";
 import CoffeeSteam from "./CoffeeSteam.js";
+import Skybox from "./Skybox.js";
 import TopChair from "./TopChair.js";
 import Whiteboard from "./Whiteboard.js";
 import Carpet from "./Carpet.js";
-import ArcadeScreen from "./ArcadeScreen.js";
 import LeftMonitorScreen from "./LeftMonitorScreen.js";
 import RightMonitorScreen from "./RightMonitorScreen.js";
 import RubiksCube from "./RubiksCube.js";
-import Skybox from "./Skybox.js";
 import Confetti from "./Confetti.js";
 import AudioManager from "./AudioManager.js";
 
@@ -30,7 +29,6 @@ export default class World extends EventEmitter {
 
         this.setWhiteboard();
         this.setCarpet();
-        this.setArcadeScreen();
         this.setTopChair();
 
         this.setLeftMonitorScreen();
@@ -76,10 +74,6 @@ export default class World extends EventEmitter {
 
   setCarpet() {
     this.carpet = new Carpet();
-  }
-
-  setArcadeScreen() {
-    this.arcadeScreen = new ArcadeScreen();
   }
 
   setLeftMonitorScreen() {

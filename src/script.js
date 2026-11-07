@@ -13,7 +13,6 @@ const isMobile =
 if (window.innerWidth > 768 && !isMobile) {
   window.experience = new Experience({
     webglElement: document.querySelector("#webgl"),
-    cssArcadeMachine: document.querySelector("#cssArcadeMachine"),
     cssLeftMonitor: document.querySelector("#cssLeftMonitor"),
     cssRightMonitor: document.querySelector("#cssRightMonitor"),
   });

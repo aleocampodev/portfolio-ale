@@ -45,7 +45,7 @@ export default class Baked {
           const name = child.name;
           if (name.includes('BAKED_1') || name.includes('Claqueta') || name.includes('Whiteboard')) {
             child.material = this.matBaked1;
-          } else if (name.includes('BAKED_2') || name.includes('TopChair') || name.includes('LeftMonitor') || name.includes('RightMonitor') || name.includes('arcadeMachine')) {
+          } else if (name.includes('BAKED_2') || name.includes('TopChair') || name.includes('LeftMonitor') || name.includes('RightMonitor')) {
             child.material = this.matBaked2;
           } else if (name.includes('BAKED_3') || name.includes('Linkedin') || name.includes('Github') || name.includes('Itchio')) {
             child.material = this.matBaked3;

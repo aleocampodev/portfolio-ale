@@ -1,65 +1,68 @@
-# 🚀 3D LiveSync Pipeline (Blender ➔ Three.js)
+# 3D Asset Synchronization Pipeline
 
-Este módulo implementa una arquitectura **unidireccional y reactiva** para sincronizar cambios visuales y geométricos desde Blender hacia el cliente web Three.js en tiempo real, sin congelar la interfaz gráfica ni depender de puertos lentos.
+This module implements a **unidirectional, reactive architecture** to synchronize visual and geometric changes from Blender into the Three.js runtime client in real time, without freezing the GUI or relying on heavyweight polling sockets.
 
 ---
 
-## 📐 Arquitectura del Sistema
+## System Architecture
 
 ```mermaid
 flowchart LR
-    subgraph Blender [Blender Desktop]
-        A[unified_room.blend] --"Ctrl + S (Guardar)"--> B[Disco Local]
+    subgraph Blender [Blender Desktop Suite]
+        A[unified_room.blend] --"Ctrl + S (Save)"--> B[Local Disk Write]
     end
 
     subgraph Watcher [Pipeline Daemon (:8081)]
         B --"inotify (fs.watch)"--> C[watch_sync.js]
-        C --"Spawn Headless"--> D[export_glb.py]
-        D --"Compilación GLB (1.1s)"--> E[unified_room.glb]
-        C --"WebSocket broadcast\n(GLB_UPDATED)"--> F[ws://localhost:8081]
+        C --"Spawn Headless CLI"--> D[export_glb.py]
+        D --"Fast glTF Compilation (~1.2s)"--> E[unified_room.glb]
+        D --"State Manifest"--> M[carpet_status.json]
+        C --"WebSocket Broadcast (GLB_UPDATED)"--> F[ws://localhost:8081]
     end
 
-    subgraph Browser [Three.js Client]
-        F --"LiveSync.js\n(WS Client)"--> G[WebGL Viewport\nhttp://localhost:8080]
-        G --"Hot Reload / Refresh"--> H[Escena Actualizada]
+    subgraph Browser [Three.js Client Application]
+        F --"LiveSync.js (WS Client)"--> G[WebGL Viewport :8080]
+        E --> G
+        M --> G
+        G --"Hot Reload / Scene Refresh"--> H[Updated 3D Scene Graph]
     end
 ```
 
 ---
 
-## 📁 Estructura de Archivos
+## Directory Structure
 
 ```text
 pipeline/
-├── export_glb.py     # Script headless de Blender para compilar unified_room.glb
-├── watch_sync.js     # Watcher Node.js + Servidor WebSocket (puerto 8081)
-└── README.md         # Esta documentación
+├── export_glb.py     # Headless Blender Python compiler
+├── watch_sync.js     # Node.js file watcher + WebSocket broadcast daemon (port 8081)
+└── README.md         # Technical documentation
 ```
 
 ---
 
-## 🛠️ Comandos Disponibles
+## Available Commands
 
-Desde la raíz del proyecto (`portfolio-ale-web/joan-portfolio`):
+From the project root (`portfolio-ale-web/joan-portfolio`):
 
-| Comando | Descripción |
+| Command | Description |
 |---|---|
-| `npm run sync` | Inicia únicamente el observador y servidor WebSocket de LiveSync. |
-| `npm run export:glb` | Ejecuta una exportación única a GLB de forma manual. |
-| `npm run dev:all` | **(Recomendado)** Inicia en paralelo el servidor Webpack (`:8080`) y el sincronizador (`:8081`). |
+| `npm run sync` | Starts only the LiveSync file watcher and WebSocket server. |
+| `npm run export:glb` | Triggers a single manual headless glTF/GLB compilation. |
+| `npm run dev:all` | **(Recommended)** Runs Webpack dev server (`:8080`) and LiveSync (`:8081`) concurrently. |
 
 ---
 
-## 🎨 Buenas Prácticas y Reglas WebGL para Blender
+## WebGL & 3D Authoring Conventions
 
-Para garantizar que cualquier cambio en Blender se visualice idéntico en Three.js:
+To ensure that 3D assets modified in Blender render consistently in WebGL with Three.js:
 
-1. **Aplicar Transformaciones (`Ctrl + A`)**:
-   - Siempre aplica **Rotation & Scale** a tus mallas antes de guardar.
-2. **Materiales Compatibles (Principled BSDF & Unlit)**:
-   - Los nodos procedurales complejos de Cycles (Voronoi, Noise, ColorRamp) **no se exportan a la web**. Deben hornearse a mapas de textura o recrearse mediante shaders GLSL en Three.js.
-   - Si un material usa iluminación horneada (como los baked de la habitación), configura el nodo de imagen conectado a **Base Color** y a **Emission Color** con `Emission Strength: 1.0` para un resultado limpio y sin sombras duplicadas.
-3. **Malla del Whiteboard**:
-   - La cara frontal del canvas está orientada hacia el eje $+X$ e integrada en las dimensiones de la pizarra metálica.
-4. **Tapete (Carpet)**:
-   - En Three.js utiliza un shader procedural multicapa de 24 niveles (*shell texturing*). En Blender se representa con textura y mapa de relieve equivalente.
+1. **Apply Object Transformations (`Ctrl + A`):**
+   - Always apply **Rotation & Scale** to geometry prior to saving.
+2. **PBR Compatibility & Unlit Shading:**
+   - Procedural Cycles shader nodes (Noise, Voronoi) are not natively supported in standard glTF 2.0 runtime models. Complex procedural details must either be baked into high-resolution texture maps or recreated using custom Three.js GLSL shaders.
+   - For pre-baked lightmaps, map the texture to both **Base Color** and **Emission Color** (`Strength: 1.0`) to avoid duplicate runtime lighting calculations.
+3. **Whiteboard Canvas Geometry:**
+   - The front face of the drawing canvas is aligned along the $+X$ axis and mapped to avoid z-fighting with the metal frame.
+4. **Carpet / Rug Entity:**
+   - Represented as a reactive entity. The Three.js runtime supports multi-layered shell texturing (24–40 shells) controlled by `carpet_status.json` dynamically generated during headless export.

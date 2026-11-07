@@ -1,5 +1,9 @@
 import "./style.css";
 import Experience from "./Experience/Experience.js";
+import LiveSync from "./Experience/Utils/LiveSync.js";
+
+// Inicializar LiveSync 3D Pipeline en desarrollo
+window.liveSync = new LiveSync();
 
 const isMobile =
   /Mobi|Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(

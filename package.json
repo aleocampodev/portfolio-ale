@@ -4,6 +4,9 @@
   "scripts": {
     "build": "webpack --config ./bundler/webpack.prod.js",
     "dev": "webpack serve --config ./bundler/webpack.dev.js",
+    "sync": "node pipeline/watch_sync.js",
+    "export:glb": "PATH=/usr/bin:/bin /usr/bin/blender -b static/assets/models/unified_room.blend --python pipeline/export_glb.py",
+    "dev:all": "concurrently -n \"WEB,3D-SYNC\" -c \"cyan,magenta\" \"npm run dev\" \"npm run sync\"",
     "prod": "git switch prod; git merge main; git push; git switch main",
     "deploy": "vercel --prod"
   },
@@ -33,5 +36,9 @@
     "webpack-cli": "^4.7.2",
     "webpack-dev-server": "^3.11.2",
     "webpack-merge": "^5.8.0"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6",
+    "ws": "^8.22.1"
   }
 }

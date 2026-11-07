@@ -60,7 +60,6 @@ export_objects(os.path.join(models_dir, 'room2.glb'), ['BAKED_2', 'LeftMonitor',
 export_objects(os.path.join(models_dir, 'room3.glb'), ['BAKED_3', 'Cover', 'Interior', 'Github', 'Linkedin', 'Itchio'])
 export_objects(os.path.join(models_dir, 'topChair.glb'), ['TopChair'])
 export_objects(os.path.join(models_dir, 'whiteboard.glb'), ['Whiteboard', 'Whiteboard_Canvas'])
-export_objects(os.path.join(models_dir, 'arcadeMachine.glb'), ['ArcadeMachine', 'arcade'])
 export_objects(os.path.join(models_dir, 'Rubik.glb'), ['Rubik', 'Cube'])
 
 # 3. Check Carpet presence

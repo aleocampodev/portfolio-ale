@@ -12,10 +12,15 @@ const WS_PORT = process.env.SYNC_PORT || 8081;
 let wss;
 try {
   wss = new WebSocketServer({ port: WS_PORT });
+  wss.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`[LiveSync] Puerto ${WS_PORT} ocupado. Reintentando en 8083...`);
+      wss = new WebSocketServer({ port: 8083 });
+    }
+  });
   console.log(`\x1b[32m✔ LiveSync WebSocket Server activo en ws://localhost:${WS_PORT}\x1b[0m`);
 } catch (err) {
   console.error(`\x1b[31m✖ Error iniciando WebSocket Server en puerto ${WS_PORT}:\x1b[0m`, err);
-  process.exit(1);
 }
 
 let connectedClients = 0;

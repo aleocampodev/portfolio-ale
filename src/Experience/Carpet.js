@@ -50,5 +50,15 @@ export default class Carpet {
     this.carpetGroup.scale.copy(CARPET_GROUP_SCALE);
     this.carpetGroup.position.copy(CARPET_GROUP_POSITION);
     this.scene.add(this.carpetGroup);
+
+    // Check if Carpet was deleted in Blender
+    fetch('/assets/models/carpet_status.json')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.exists === false) {
+          this.carpetGroup.visible = false;
+        }
+      })
+      .catch(() => {});
   }
 }

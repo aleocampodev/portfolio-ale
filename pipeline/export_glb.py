@@ -1,23 +1,21 @@
 import bpy
 import os
-import sys
 import time
+import json
 
 start_time = time.time()
-
-blend_path = bpy.data.filepath
-if not blend_path:
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    repo_root = os.path.dirname(script_dir)
-    blend_path = os.path.join(repo_root, "static", "assets", "models", "unified_room.blend")
-
 repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-output_glb = os.path.join(repo_root, "static", "assets", "models", "unified_room.glb")
+models_dir = os.path.join(repo_root, 'static', 'assets', 'models')
 
-print(f"[PIPELINE] Exporting {blend_path} -> {output_glb}")
+output_unified = os.path.join(models_dir, 'unified_room.glb')
+output_arcade = os.path.join(models_dir, 'arcadeMachine.glb')
+carpet_meta = os.path.join(models_dir, 'carpet_status.json')
 
+print("[PIPELINE] Exportando unified_room.glb desde Blender...")
+
+# 1. Export unified_room.glb
 bpy.ops.export_scene.gltf(
-    filepath=output_glb,
+    filepath=output_unified,
     export_format='GLB',
     use_selection=False,
     export_apply=True,
@@ -29,6 +27,29 @@ bpy.ops.export_scene.gltf(
     export_lights=False
 )
 
+# 2. Check arcade machine presence
+arcade_objs = [o for o in bpy.data.objects if 'arcade' in o.name.lower()]
+if arcade_objs:
+    bpy.ops.object.select_all(action='DESELECT')
+    for o in arcade_objs:
+        o.select_set(True)
+    bpy.ops.export_scene.gltf(filepath=output_arcade, export_format='GLB', use_selection=True, export_apply=True, export_yup=True)
+    print("[PIPELINE] arcadeMachine presente y exportada.")
+else:
+    temp_scene = bpy.data.scenes.new('EmptyScene')
+    old_scene = bpy.context.window.scene
+    bpy.context.window.scene = temp_scene
+    bpy.ops.export_scene.gltf(filepath=output_arcade, export_format='GLB', use_selection=False)
+    bpy.context.window.scene = old_scene
+    bpy.data.scenes.remove(temp_scene)
+    print("[PIPELINE] arcadeMachine no existe en Blender -> arcadeMachine.glb vaciado.")
+
+# 3. Check Carpet presence and write status
+carpet_objs = [o for o in bpy.data.objects if 'carpet' in o.name.lower()]
+carpet_exists = len(carpet_objs) > 0
+with open(carpet_meta, 'w') as f:
+    json.dump({'exists': carpet_exists}, f)
+print(f"[PIPELINE] Carpet en Blender: {'PRESENTE' if carpet_exists else 'ELIMINADA'} (carpet_status.json: {carpet_exists})")
+
 elapsed = round(time.time() - start_time, 2)
-size_mb = round(os.path.getsize(output_glb) / (1024 * 1024), 2)
-print(f"[PIPELINE] GLB successfully exported in {elapsed}s ({size_mb} MB) -> {output_glb}")
+print(f"[PIPELINE] Pipeline completado exitosamente en {elapsed}s")

@@ -19,5 +19,7 @@ if (window.innerWidth > 768 && !isMobile) {
   });
 } else {
   const mobileAdvise = document.querySelector(".mobile-text");
-  mobileAdvise.style.display = "block";
+  if (mobileAdvise) {
+    mobileAdvise.style.display = "block";
+  }
 }

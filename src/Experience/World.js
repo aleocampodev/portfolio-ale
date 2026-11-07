@@ -1,3 +1,4 @@
+import EventEmitter from "./Utils/EventEmitter.js";
 import Experience from "./Experience.js";
 import Baked from "./Baked.js";
 import CoffeeSteam from "./CoffeeSteam.js";
@@ -14,8 +15,9 @@ import AudioManager from "./AudioManager.js";
 
 import { RUBIK_POSITION, RUBIK_SCALE } from "./constants.js";
 
-export default class World {
+export default class World extends EventEmitter {
   constructor(_options) {
+    super();
     this.experience = new Experience();
     this.config = this.experience.config;
     this.scene = this.experience.scene;
@@ -25,16 +27,21 @@ export default class World {
       if (_group.name === "base") {
         this.setAudioManager();
         this.setBaked();
+
         this.setWhiteboard();
         this.setCarpet();
         this.setArcadeScreen();
+        this.setTopChair();
+
         this.setLeftMonitorScreen();
         this.setRightMonitorScreen();
-        this.setTopChair();
         this.setSkybox();
         this.setConfetti();
         this.setCoffeeSteam();
         this.setRubiksCube();
+
+        // Trigger worldready so Preloader dismisses the cover
+        this.trigger("worldready");
       }
     });
   }

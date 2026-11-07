@@ -28,6 +28,38 @@ export default class Baked {
 
   setModels = () => {
     this.model = {};
+
+    if (this.resources.items.unifiedRoom && this.useUnifiedRoom) {
+      this.model.unified = this.resources.items.unifiedRoom.scene;
+
+      this.bakedTexture1 = this.configureTexture(this.resources.items.baked1);
+      this.bakedTexture2 = this.configureTexture(this.resources.items.baked2);
+      this.bakedTexture3 = this.configureTexture(this.resources.items.baked3);
+
+      this.matBaked1 = new MeshBasicMaterial({ map: this.bakedTexture1 });
+      this.matBaked2 = new MeshBasicMaterial({ map: this.bakedTexture2 });
+      this.matBaked3 = new MeshBasicMaterial({ map: this.bakedTexture3 });
+
+      this.model.unified.traverse((child) => {
+        if (child.isMesh) {
+          const name = child.name;
+          if (name.includes('BAKED_1') || name.includes('Claqueta') || name.includes('Whiteboard')) {
+            child.material = this.matBaked1;
+          } else if (name.includes('BAKED_2') || name.includes('TopChair') || name.includes('LeftMonitor') || name.includes('RightMonitor') || name.includes('arcadeMachine')) {
+            child.material = this.matBaked2;
+          } else if (name.includes('BAKED_3') || name.includes('Linkedin') || name.includes('Github') || name.includes('Itchio')) {
+            child.material = this.matBaked3;
+          } else if (!child.material || child.material.type === 'MeshStandardMaterial') {
+            // Fallback unlit
+            child.material = new MeshBasicMaterial({ color: child.material.color, map: child.material.map });
+          }
+        }
+      });
+
+      this.scene.add(this.model.unified);
+      return;
+    }
+
     this.model.room1 = this.resources.items._roomModel.scene;
 
     this.bakedTexture1 = this.configureTexture(this.resources.items.baked1);

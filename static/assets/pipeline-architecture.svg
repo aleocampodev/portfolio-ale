@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" width="100%" height="100%" style="background:#0d1117; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <defs>
+    <linearGradient id="blenderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ea7600" />
+      <stop offset="100%" stop-color="#e87d0d" />
+    </linearGradient>
+    <linearGradient id="nodeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22272e" />
+      <stop offset="100%" stop-color="#1c2128" />
+    </linearGradient>
+    <linearGradient id="threeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#161b22" />
+      <stop offset="100%" stop-color="#0d1117" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#58a6ff" />
+    </marker>
+    <marker id="wsarrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#3fb950" />
+    </marker>
+  </defs>
+
+  <!-- Title & Subtitle -->
+  <text x="480" y="45" text-anchor="middle" fill="#f0f6fc" font-size="22" font-weight="700" letter-spacing="0.5">Reactive 3D Asset Synchronization Pipeline</text>
+  <text x="480" y="72" text-anchor="middle" fill="#8b949e" font-size="13">Unidirectional, Headless Blender 5.2 LTS ➔ Three.js WebGL Real-time Toolchain</text>
+
+  <!-- Stage 1: Blender Authoring -->
+  <g transform="translate(40, 120)" filter="url(#glow)">
+    <rect width="210" height="220" rx="12" fill="url(#nodeGrad)" stroke="#e87d0d" stroke-width="2" />
+    <rect x="14" y="14" width="40" height="40" rx="8" fill="url(#blenderGrad)" />
+    <text x="34" y="39" text-anchor="middle" fill="#ffffff" font-size="18" font-weight="bold">B</text>
+    <text x="66" y="32" fill="#f0f6fc" font-size="15" font-weight="600">Blender 5.2</text>
+    <text x="66" y="48" fill="#8b949e" font-size="12">Authoring Suite</text>
+    <line x1="14" y1="68" x2="196" y2="68" stroke="#30363d" stroke-width="1" />
+    <text x="20" y="96" fill="#c9d1d9" font-size="12">• unified_room.blend</text>
+    <text x="20" y="120" fill="#c9d1d9" font-size="12">• PBR Materials &amp; UVs</text>
+    <text x="20" y="144" fill="#c9d1d9" font-size="12">• Real-time Viewport</text>
+    <rect x="18" y="168" width="174" height="34" rx="6" fill="rgba(232, 125, 13, 0.15)" stroke="#e87d0d" stroke-width="1" />
+    <text x="105" y="190" text-anchor="middle" fill="#f0883e" font-size="12" font-weight="600">Save Trigger (Ctrl + S)</text>
+  </g>
+
+  <!-- Arrow 1: inotify -->
+  <path d="M 252 230 L 328 230" stroke="#58a6ff" stroke-width="2.5" fill="none" marker-end="url(#arrowhead)" />
+  <text x="290" y="218" text-anchor="middle" fill="#58a6ff" font-size="11" font-weight="600">fs.watch</text>
+
+  <!-- Stage 2: Node.js Orchestrator & Headless CLI -->
+  <g transform="translate(340, 110)" filter="url(#glow)">
+    <rect width="260" height="240" rx="12" fill="url(#nodeGrad)" stroke="#58a6ff" stroke-width="2" />
+    <text x="20" y="34" fill="#58a6ff" font-size="15" font-weight="700">Asset Compilation Daemon</text>
+    <text x="20" y="52" fill="#8b949e" font-size="12">pipeline/watch_sync.js (Node.js)</text>
+    <line x1="16" y1="66" x2="244" y2="66" stroke="#30363d" stroke-width="1" />
+    <rect x="16" y="80" width="228" height="84" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1" />
+    <text x="26" y="102" fill="#79c0ff" font-size="12" font-weight="600">Headless Blender CLI</text>
+    <text x="26" y="122" fill="#8b949e" font-size="11">blender -b --python export_glb.py</text>
+    <text x="26" y="142" fill="#3fb950" font-size="11">✔ Fast glTF export (~1.2s - 1.8s)</text>
+    <rect x="16" y="178" width="228" height="54" rx="8" fill="rgba(63, 185, 80, 0.1)" stroke="#3fb950" stroke-width="1" />
+    <text x="26" y="198" fill="#3fb950" font-size="12" font-weight="600">WebSocket Broadcast</text>
+    <text x="26" y="218" fill="#8b949e" font-size="11">Port :8081 | Event: GLB_UPDATED</text>
+  </g>
+
+  <!-- Arrow 2: GLB File write + WS trigger -->
+  <path d="M 602 205 L 688 205" stroke="#58a6ff" stroke-width="2.5" fill="none" marker-end="url(#arrowhead)" />
+  <text x="645" y="195" text-anchor="middle" fill="#58a6ff" font-size="11" font-weight="600">static/*.glb</text>
+  <path d="M 602 250 L 688 250" stroke="#3fb950" stroke-width="2.5" stroke-dasharray="5,4" fill="none" marker-end="url(#wsarrowhead)" />
+  <text x="645" y="270" text-anchor="middle" fill="#3fb950" font-size="11" font-weight="600">ws://:8081</text>
+
+  <!-- Stage 3: Three.js Client Application -->
+  <g transform="translate(700, 120)" filter="url(#glow)">
+    <rect width="220" height="220" rx="12" fill="url(#threeGrad)" stroke="#3fb950" stroke-width="2" />
+    <rect x="14" y="14" width="40" height="40" rx="8" fill="#238636" />
+    <text x="34" y="39" text-anchor="middle" fill="#ffffff" font-size="16" font-weight="bold">3D</text>
+    <text x="66" y="32" fill="#f0f6fc" font-size="15" font-weight="600">Three.js Client</text>
+    <text x="66" y="48" fill="#8b949e" font-size="12">WebGL Runtime (:8080)</text>
+    <line x1="14" y1="68" x2="206" y2="68" stroke="#30363d" stroke-width="1" />
+    <text x="20" y="96" fill="#c9d1d9" font-size="12">• LiveSync Client (WS)</text>
+    <text x="20" y="120" fill="#c9d1d9" font-size="12">• Baked PBR Shaders</text>
+    <text x="20" y="144" fill="#c9d1d9" font-size="12">• Dynamic Visibility Sync</text>
+    <rect x="18" y="168" width="184" height="34" rx="6" fill="rgba(63, 185, 80, 0.15)" stroke="#3fb950" stroke-width="1" />
+    <text x="110" y="190" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="600">Instant Canvas Refresh</text>
+  </g>
+
+  <!-- Bottom Status Pill -->
+  <g transform="translate(280, 375)">
+    <rect width="400" height="30" rx="15" fill="#161b22" stroke="#30363d" stroke-width="1" />
+    <circle cx="20" cy="15" r="4" fill="#3fb950" />
+    <text x="34" y="19" fill="#8b949e" font-size="12">Roundtrip Latency: <tspan fill="#f0f6fc" font-weight="600">~1.8s</tspan> | Zero manual file exports | Production-grade</text>
+  </g>
+</svg>

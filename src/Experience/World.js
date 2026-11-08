@@ -7,7 +7,6 @@ import TopChair from "./TopChair.js";
 import Whiteboard from "./Whiteboard.js";
 import Carpet from "./Carpet.js";
 import LeftMonitorScreen from "./LeftMonitorScreen.js";
-import RightMonitorScreen from "./RightMonitorScreen.js";
 import RubiksCube from "./RubiksCube.js";
 import Confetti from "./Confetti.js";
 import AudioManager from "./AudioManager.js";
@@ -32,7 +31,6 @@ export default class World extends EventEmitter {
         this.setTopChair();
 
         this.setLeftMonitorScreen();
-        this.setRightMonitorScreen();
         this.setSkybox();
         this.setConfetti();
         this.setCoffeeSteam();
@@ -79,10 +77,6 @@ export default class World extends EventEmitter {
   setLeftMonitorScreen() {
     this.leftMonitorScreen = new LeftMonitorScreen();
   }
-
-  setRightMonitorScreen() {
-    this.rightMonitorScreen = new RightMonitorScreen();
-  }
   setAudioManager() {
     this.audioManager = new AudioManager();
   }
@@ -95,7 +89,6 @@ export default class World extends EventEmitter {
     if (this.rubiksCube) this.rubiksCube.update();
     if (this.skybox) this.skybox.update();
     if (this.leftMonitorScreen) this.leftMonitorScreen.update();
-    if (this.rightMonitorScreen) this.rightMonitorScreen.update();
     if (this.confetti) this.confetti.update();
     if (this.whiteboard) this.whiteboard.update();
   }

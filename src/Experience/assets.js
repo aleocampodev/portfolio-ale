@@ -21,7 +21,7 @@ export default [
       },
       {
         name: "baked1",
-        source: "/assets/textures/baked1.png",
+        source: "/assets/textures/baked1.ktx2",
         type: "texture",
       },
       {
@@ -40,7 +40,6 @@ export default [
         type: "texture",
       },
       { name: "_roomModel", source: "/assets/models/room.glb" },
-      { name: "floorModel", source: "/assets/models/floor.glb" },
       { name: "_roomModel2", source: "/assets/models/room2.glb" },
       { name: "_roomModel3", source: "/assets/models/room3.glb" },
       { name: "whiteboard", source: "/assets/models/whiteboard.glb" },

@@ -38,11 +38,12 @@ export default class Baked {
     });
 
     // Material exclusivo para el piso: Textura original de tablillas de madera con acabado cálido suave
-    // Preserva 100% las tablillas naturales de la imagen 1 y erradica por completo las sombras oscuras de arcade y pesas
+    // Preserva las sombras naturales de objetos existentes (silla, mesa, plantas, cama) y elimina
+    // de forma localizada y limpia las sombras de objetos removidos (arcade y pesas)
     const floorMaterial = new MeshBasicMaterial({
       map: this.bakedTexture1,
     });
-    floorMaterial.customProgramCacheKey = () => "floorOriginalSlatsNoArcadeShadows_v7";
+    floorMaterial.customProgramCacheKey = () => "floorOriginalSlatsTargetedShadows_v8";
 
     floorMaterial.onBeforeCompile = (shader) => {
       shader.fragmentShader = shader.fragmentShader.replace(
@@ -57,15 +58,25 @@ export default class Baked {
           // Luminancia local del bake original
           float lum = dot(sampledDiffuseColor.rgb, vec3(0.299, 0.587, 0.114));
 
-          // Des-sombrado específico para erradicar las sombras quemadas de arcade y pesas:
-          // 1. Levantamiento ambiental general (shadowMask)
-          float shadowMask = clamp((0.44 - lum) / 0.36, 0.0, 1.0);
-          // 2. Compensación focalizada para las manchas profundas (arcade y mancuernas lum < 0.22)
-          float deepShadowLift = clamp((0.22 - lum) / 0.22, 0.0, 1.0) * 0.11;
-          float liftedLum = lum + 0.30 * shadowMask + deepShadowLift;
+          // Máscaras localizadas para objetos removidos (Arcade y Pesas):
+          // Arcade: U en [0.08, 0.22], V en [0.04, 0.18]
+          float mArcU = clamp((vMapUv.x - 0.05) / 0.03, 0.0, 1.0) * clamp((0.24 - vMapUv.x) / 0.03, 0.0, 1.0);
+          float mArcV = clamp((vMapUv.y - 0.02) / 0.03, 0.0, 1.0) * clamp((0.20 - vMapUv.y) / 0.03, 0.0, 1.0);
+          float maskArcade = mArcU * mArcV;
 
-          // Textura natural de tablillas preservando las vetas y ranuras originales exactas de la imagen 1
-          float slatFactor = 0.36 + 0.76 * clamp((liftedLum - 0.36) / 0.07, 0.0, 1.15);
+          // Pesas / Mancuernas: U en [0.13, 0.22], V en [0.21, 0.29]
+          float mPesaU = clamp((vMapUv.x - 0.11) / 0.03, 0.0, 1.0) * clamp((0.24 - vMapUv.x) / 0.03, 0.0, 1.0);
+          float mPesaV = clamp((vMapUv.y - 0.19) / 0.03, 0.0, 1.0) * clamp((0.31 - vMapUv.y) / 0.03, 0.0, 1.0);
+          float maskPesas = mPesaU * mPesaV;
+
+          float removeMask = max(maskArcade, maskPesas);
+
+          // En las zonas de arcade y pesas elevamos la sombra para erradicarlas por completo
+          // En el resto del cuarto (silla, matas, cama, escritorio) las sombras se conservan naturales
+          float liftedLum = lum + removeMask * max(0.42 - lum, 0.0);
+
+          // Textura natural con contraste claro de tablillas y sombras reales del entorno
+          float slatFactor = 0.36 + 0.76 * clamp((liftedLum - 0.20) / 0.18, 0.0, 1.15);
 
           // Tono cálido roble suave / café claro (espacio lineal compensando GammaCorrectionShader)
           vec3 woodLinear = vec3(0.50, 0.34, 0.22);

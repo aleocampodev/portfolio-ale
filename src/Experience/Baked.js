@@ -58,8 +58,8 @@ export default class Baked {
           // Normalizar veta eliminando sombras residuales de arcade y pesas
           float grain = clamp(lum / 0.45, 0.85, 1.20);
 
-          // Color café suave exacto #E5C9B6 (sRGB / lineal balanceado)
-          vec3 coffeeBase = vec3(0.898, 0.788, 0.714);
+          // Color café suave exacto #E5C9B6 en espacio lineal (para que tras GammaCorrectionPass sea 100% #E5C9B6)
+          vec3 coffeeBase = vec3(0.7835, 0.5843, 0.4678);
           diffuseColor.rgb = coffeeBase * grain;
         #endif
         `

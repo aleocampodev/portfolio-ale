@@ -37,13 +37,12 @@ export default class Baked {
       map: this.bakedTexture1,
     });
 
-    // Material exclusivo para el piso: Tablillas de madera con textura lineal limpia
-    // Tono cálido roble suave / café claro (un poco más oscuro, no blanco) con ranuras de tablillas bien visibles
-    // Eliminación 100% completa de sombras de arcade y pesas sin manchas residuales
+    // Material exclusivo para el piso: Textura original de tablillas de madera con acabado cálido suave
+    // Preserva 100% las tablillas naturales de la imagen 1 y erradica por completo las sombras oscuras de arcade y pesas
     const floorMaterial = new MeshBasicMaterial({
       map: this.bakedTexture1,
     });
-    floorMaterial.customProgramCacheKey = () => "floorCleanSlatsNoShadows_v6";
+    floorMaterial.customProgramCacheKey = () => "floorOriginalSlatsNoArcadeShadows_v7";
 
     floorMaterial.onBeforeCompile = (shader) => {
       shader.fragmentShader = shader.fragmentShader.replace(
@@ -55,21 +54,20 @@ export default class Baked {
             sampledDiffuseColor = vec4( mix( pow( sampledDiffuseColor.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), sampledDiffuseColor.rgb * 0.0773993808, vec3( lessThanEqual( sampledDiffuseColor.rgb, vec3( 0.04045 ) ) ) ), sampledDiffuseColor.w );
           #endif
 
-          // Luminancia local del bake
+          // Luminancia local del bake original
           float lum = dot(sampledDiffuseColor.rgb, vec3(0.299, 0.587, 0.114));
 
-          // Eliminación total de sombras quemadas (arcade y pesas):
-          // Eleva cualquier sombra profunda (< 0.39) al nivel natural de la habitación,
-          // erradicando al 100% las siluetas oscuras residuales
-          float liftedLum = max(lum, 0.39);
+          // Des-sombrado específico para erradicar las sombras quemadas de arcade y pesas:
+          // 1. Levantamiento ambiental general (shadowMask)
+          float shadowMask = clamp((0.44 - lum) / 0.36, 0.0, 1.0);
+          // 2. Compensación focalizada para las manchas profundas (arcade y mancuernas lum < 0.22)
+          float deepShadowLift = clamp((0.22 - lum) / 0.22, 0.0, 1.0) * 0.11;
+          float liftedLum = lum + 0.30 * shadowMask + deepShadowLift;
 
-          // Tablillas de madera lineales limpias con alineación exacta a la malla UV (periodo 38.6px en 4096):
-          // Frecuencia = 4096.0 / 38.6 = 106.114
-          float slatPhase = fract(vMapUv.y * 106.114);
-          float groove = smoothstep(0.0, 0.07, slatPhase) * (1.0 - smoothstep(0.93, 1.0, slatPhase));
-          float slatFactor = 0.40 + 0.75 * groove + clamp((liftedLum - 0.39) / 0.08, 0.0, 0.12);
+          // Textura natural de tablillas preservando las vetas y ranuras originales exactas de la imagen 1
+          float slatFactor = 0.36 + 0.76 * clamp((liftedLum - 0.36) / 0.07, 0.0, 1.15);
 
-          // Tono cálido roble suave / café tostado ligero (espacio lineal compensando GammaCorrectionShader)
+          // Tono cálido roble suave / café claro (espacio lineal compensando GammaCorrectionShader)
           vec3 woodLinear = vec3(0.50, 0.34, 0.22);
 
           diffuseColor.rgb = woodLinear * slatFactor;

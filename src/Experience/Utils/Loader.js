@@ -155,38 +155,12 @@ export default class Resources extends EventEmitter {
   }
 
   setOverlayLoading() {
-    this.overlayGeometry = new PlaneGeometry(2, 2, 1, 1);
-    this.overlayMaterial = new ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      uniforms: {
-        uAlpha: { value: 0 },
-        uColor: { value: new Color("#2b2b29") },
-      },
-      vertexShader: vertexShader,
-      fragmentShader: fragmentShader,
-    });
-    this.overlay = new Mesh(this.overlayGeometry, this.overlayMaterial);
-    this.scene.add(this.overlay);
+    // Overlay desactivado para que nunca bloquee la cámara
   }
 
   removeOverlay = () => {
-    gsap.to(this.overlayMaterial.uniforms.uAlpha, {
-      duration: 0.5,
-      value: 0,
-      delay: 1,
-      ease: "sine.in",
-      onComplete: () => {
-        this.overlayGeometry.dispose();
-        this.overlayMaterial.dispose();
-        this.scene.remove(this.overlay);
-        this.resourcesLoaded = true;
-      },
-      onStart: () => {
-        this.banner.style.top = "0px";
-        this.experience.navigation.orbitControls.enabled = true;
-      },
-    });
+    this.experience.navigation.orbitControls.enabled = true;
+    this.resourcesLoaded = true;
   };
 
   /**

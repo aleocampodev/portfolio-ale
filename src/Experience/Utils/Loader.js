@@ -158,10 +158,10 @@ export default class Resources extends EventEmitter {
     this.overlayGeometry = new PlaneGeometry(2, 2, 1, 1);
     this.overlayMaterial = new ShaderMaterial({
       transparent: true,
-      depthTest: false,
+      depthWrite: false,
       uniforms: {
-        uColor: { value: new Color(0x072446) },
-        uAlpha: { value: 1 },
+        uAlpha: { value: 0 },
+        uColor: { value: new Color("#2b2b29") },
       },
       vertexShader: vertexShader,
       fragmentShader: fragmentShader,

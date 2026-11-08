@@ -39,10 +39,11 @@ export default class Baked {
 
     // Material exclusivo para el piso: Tablillas de madera con textura lineal limpia
     // Tono cálido roble suave / café claro (un poco más oscuro, no blanco) con ranuras de tablillas bien visibles
+    // Eliminación 100% completa de sombras de arcade y pesas sin manchas residuales
     const floorMaterial = new MeshBasicMaterial({
       map: this.bakedTexture1,
     });
-    floorMaterial.customProgramCacheKey = () => "floorHighDefSlatsWarmWood_v5";
+    floorMaterial.customProgramCacheKey = () => "floorCleanSlatsNoShadows_v6";
 
     floorMaterial.onBeforeCompile = (shader) => {
       shader.fragmentShader = shader.fragmentShader.replace(
@@ -54,17 +55,19 @@ export default class Baked {
             sampledDiffuseColor = vec4( mix( pow( sampledDiffuseColor.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), sampledDiffuseColor.rgb * 0.0773993808, vec3( lessThanEqual( sampledDiffuseColor.rgb, vec3( 0.04045 ) ) ) ), sampledDiffuseColor.w );
           #endif
 
-          // Luminancia local del fragmento
+          // Luminancia local del bake
           float lum = dot(sampledDiffuseColor.rgb, vec3(0.299, 0.587, 0.114));
 
-          // Des-sombrado adaptativo calibrado: elimina manchas de arcade y pesas,
-          // manteniendo la dinámica de separación de ranuras y vetas
-          float shadowMask = clamp((0.44 - lum) / 0.36, 0.0, 1.0);
-          float liftedLum = lum + 0.30 * shadowMask;
+          // Eliminación total de sombras quemadas (arcade y pesas):
+          // Eleva cualquier sombra profunda (< 0.39) al nivel natural de la habitación,
+          // erradicando al 100% las siluetas oscuras residuales
+          float liftedLum = max(lum, 0.39);
 
-          // Curva de tablilla con ranuras marcadas (0.36) y cuerpo definido (1.15):
-          // Produce contraste visual claro (delta ~48 ptos) para que la tablilla se distinga nítidamente
-          float slatFactor = 0.36 + 0.76 * clamp((liftedLum - 0.36) / 0.07, 0.0, 1.15);
+          // Tablillas de madera lineales limpias con alineación exacta a la malla UV (periodo 38.6px en 4096):
+          // Frecuencia = 4096.0 / 38.6 = 106.114
+          float slatPhase = fract(vMapUv.y * 106.114);
+          float groove = smoothstep(0.0, 0.07, slatPhase) * (1.0 - smoothstep(0.93, 1.0, slatPhase));
+          float slatFactor = 0.40 + 0.75 * groove + clamp((liftedLum - 0.39) / 0.08, 0.0, 0.12);
 
           // Tono cálido roble suave / café tostado ligero (espacio lineal compensando GammaCorrectionShader)
           vec3 woodLinear = vec3(0.50, 0.34, 0.22);

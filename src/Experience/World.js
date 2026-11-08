@@ -94,7 +94,6 @@ export default class World extends EventEmitter {
     if (this.rubiksCube) this.rubiksCube.update();
     if (this.skybox) this.skybox.update();
     if (this.leftMonitorScreen) this.leftMonitorScreen.update();
-    if (this.rightMonitorScreen) this.rightMonitorScreen.update();
     if (this.confetti) this.confetti.update();
     if (this.whiteboard) this.whiteboard.update();
   }

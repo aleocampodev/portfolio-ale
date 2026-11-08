@@ -38,11 +38,11 @@ export default class Baked {
     });
 
     // Material exclusivo para el piso en Roble Escandinavo (#D4B293)
-    // Conserva la continuidad de vetas y tablas de madera eliminando sombras residuales del arcade y pesas
+    // Preserva las tablillas de madera reales (ranuras y vetas) y desacopla sombras de arcade/pesas
     const floorMaterial = new MeshBasicMaterial({
       map: this.bakedTexture1,
     });
-    floorMaterial.customProgramCacheKey = () => "floorScandinavianOak_v5";
+    floorMaterial.customProgramCacheKey = () => "floorScandinavianOak_v7";
 
     floorMaterial.onBeforeCompile = (shader) => {
       shader.fragmentShader = shader.fragmentShader.replace(
@@ -54,20 +54,21 @@ export default class Baked {
             sampledDiffuseColor = vec4( mix( pow( sampledDiffuseColor.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), sampledDiffuseColor.rgb * 0.0773993808, vec3( lessThanEqual( sampledDiffuseColor.rgb, vec3( 0.04045 ) ) ) ), sampledDiffuseColor.w );
           #endif
 
-          // Luminancia de la textura horneada original
+          // Luminancia local del fragmento
           float lum = dot(sampledDiffuseColor.rgb, vec3(0.299, 0.587, 0.114));
 
-          // Des-sombrado adaptativo: levanta sombras residuales de arcade y mancuernas
-          float shadowMask = clamp((0.46 - lum) / 0.40, 0.0, 1.0);
-          float baseLum = pow(max(lum, 0.03), 0.38) + 0.35 * shadowMask;
+          // Des-sombrado adaptativo: levanta sombras amplias residuales (arcade y mancuernas)
+          float shadowMask = clamp((0.45 - lum) / 0.38, 0.0, 1.0);
+          float liftedLum = lum + 0.38 * shadowMask;
 
-          // Relieve y textura continua de las tablas de madera (vetas y ranuras)
-          float grain = clamp(baseLum / 0.72, 0.70, 1.25);
+          // Relieve de tablillas y vetas de madera:
+          // Ranuras divisorias oscuras (~0.25) y cuerpo/veta de la tabla (1.0 - 1.25)
+          float slatFactor = clamp((liftedLum - 0.18) / 0.36, 0.25, 1.25);
 
           // Tono Roble Escandinavo (#D4B293) en espacio lineal calibrado para GammaCorrectionShader
           vec3 oakLinear = vec3(0.6184, 0.4210, 0.2763);
 
-          diffuseColor.rgb = oakLinear * grain;
+          diffuseColor.rgb = oakLinear * slatFactor;
         #endif
         `
       );

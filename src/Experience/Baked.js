@@ -38,12 +38,12 @@ export default class Baked {
     });
 
     // Material exclusivo para el piso: Textura original de tablillas de madera con acabado cálido suave
-    // Preserva las sombras naturales de objetos existentes (silla, mesa, plantas, cama) y elimina
-    // de forma localizada y limpia las sombras de objetos removidos (arcade y pesas)
+    // Des-sombrado fotométrico real: recupera las tablillas reales de madera dentro de la sombra del arcade y pesas,
+    // eliminando las siluetas sin aplanar ni dejar parches, y manteniendo intactas las sombras de la silla y plantas.
     const floorMaterial = new MeshBasicMaterial({
       map: this.bakedTexture1,
     });
-    floorMaterial.customProgramCacheKey = () => "floorOriginalSlatsTargetedShadows_v8";
+    floorMaterial.customProgramCacheKey = () => "floorTruePhotometricDeshadow_v9";
 
     floorMaterial.onBeforeCompile = (shader) => {
       shader.fragmentShader = shader.fragmentShader.replace(
@@ -58,25 +58,34 @@ export default class Baked {
           // Luminancia local del bake original
           float lum = dot(sampledDiffuseColor.rgb, vec3(0.299, 0.587, 0.114));
 
+          // Muestreo a medio periodo (19.3px = 0.0047 en UV) para desacoplar la ranura de la iluminación global
+          vec4 tapA = texture2D( map, vMapUv + vec2(0.0, 0.0047) );
+          vec4 tapB = texture2D( map, vMapUv - vec2(0.0, 0.0047) );
+          float lumA = dot(tapA.rgb, vec3(0.299, 0.587, 0.114));
+          float lumB = dot(tapB.rgb, vec3(0.299, 0.587, 0.114));
+          float broadIllum = (lum + lumA + lumB) * 0.33333;
+
           // Máscaras localizadas para objetos removidos (Arcade y Pesas):
-          // Arcade: U en [0.08, 0.22], V en [0.04, 0.18]
-          float mArcU = clamp((vMapUv.x - 0.05) / 0.03, 0.0, 1.0) * clamp((0.24 - vMapUv.x) / 0.03, 0.0, 1.0);
-          float mArcV = clamp((vMapUv.y - 0.02) / 0.03, 0.0, 1.0) * clamp((0.20 - vMapUv.y) / 0.03, 0.0, 1.0);
+          // Arcade: U en [0.07, 0.23], V en [0.03, 0.19]
+          float mArcU = clamp((vMapUv.x - 0.05) / 0.04, 0.0, 1.0) * clamp((0.25 - vMapUv.x) / 0.04, 0.0, 1.0);
+          float mArcV = clamp((vMapUv.y - 0.02) / 0.03, 0.0, 1.0) * clamp((0.21 - vMapUv.y) / 0.03, 0.0, 1.0);
           float maskArcade = mArcU * mArcV;
 
-          // Pesas / Mancuernas: U en [0.13, 0.22], V en [0.21, 0.29]
-          float mPesaU = clamp((vMapUv.x - 0.11) / 0.03, 0.0, 1.0) * clamp((0.24 - vMapUv.x) / 0.03, 0.0, 1.0);
-          float mPesaV = clamp((vMapUv.y - 0.19) / 0.03, 0.0, 1.0) * clamp((0.31 - vMapUv.y) / 0.03, 0.0, 1.0);
+          // Pesas / Mancuernas: U en [0.12, 0.23], V en [0.20, 0.30]
+          float mPesaU = clamp((vMapUv.x - 0.10) / 0.04, 0.0, 1.0) * clamp((0.25 - vMapUv.x) / 0.04, 0.0, 1.0);
+          float mPesaV = clamp((vMapUv.y - 0.18) / 0.03, 0.0, 1.0) * clamp((0.32 - vMapUv.y) / 0.03, 0.0, 1.0);
           float maskPesas = mPesaU * mPesaV;
 
           float removeMask = max(maskArcade, maskPesas);
 
-          // En las zonas de arcade y pesas elevamos la sombra para erradicarlas por completo
-          // En el resto del cuarto (silla, matas, cama, escritorio) las sombras se conservan naturales
-          float liftedLum = lum + removeMask * max(0.42 - lum, 0.0);
+          // Normalización fotométrica (des-sombrado por división):
+          // En arcade y pesas divide por la sombra envolvente para rescatar las vetas y ranuras reales de madera,
+          // en lugar de rellenar con un color plano que genera parches visuales.
+          float effectiveIllum = mix(0.38, max(broadIllum, 0.06), removeMask);
+          float normalizedLum = lum * (0.38 / effectiveIllum);
 
-          // Textura natural con contraste claro de tablillas y sombras reales del entorno
-          float slatFactor = 0.36 + 0.76 * clamp((liftedLum - 0.20) / 0.18, 0.0, 1.15);
+          // Textura natural continua con ranuras y cuerpo de tablilla equilibrados
+          float slatFactor = 0.36 + 0.76 * clamp((normalizedLum - 0.20) / 0.18, 0.0, 1.15);
 
           // Tono cálido roble suave / café claro (espacio lineal compensando GammaCorrectionShader)
           vec3 woodLinear = vec3(0.50, 0.34, 0.22);

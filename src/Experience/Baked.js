@@ -38,11 +38,11 @@ export default class Baked {
     });
 
     // Material exclusivo para el piso: Tablillas de madera con textura lineal limpia
-    // Color beige claro cálido minimalista, estilo render 3D isométrico suave, acabado mate satinado sin reflejos complejos
+    // Tono cálido roble suave / café claro (un poco más oscuro, no blanco) con ranuras de tablillas bien visibles
     const floorMaterial = new MeshBasicMaterial({
       map: this.bakedTexture1,
     });
-    floorMaterial.customProgramCacheKey = () => "floorMinimalistWarmBeige_v1";
+    floorMaterial.customProgramCacheKey = () => "floorHighDefSlatsWarmWood_v5";
 
     floorMaterial.onBeforeCompile = (shader) => {
       shader.fragmentShader = shader.fragmentShader.replace(
@@ -54,21 +54,22 @@ export default class Baked {
             sampledDiffuseColor = vec4( mix( pow( sampledDiffuseColor.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), sampledDiffuseColor.rgb * 0.0773993808, vec3( lessThanEqual( sampledDiffuseColor.rgb, vec3( 0.04045 ) ) ) ), sampledDiffuseColor.w );
           #endif
 
-          // Luminancia local
+          // Luminancia local del fragmento
           float lum = dot(sampledDiffuseColor.rgb, vec3(0.299, 0.587, 0.114));
 
-          // Des-sombrado adaptativo: elimina al 100% manchas y sombras quemadas de arcade y pesas
-          float shadowMask = clamp((0.45 - lum) / 0.38, 0.0, 1.0);
-          float liftedLum = lum + 0.36 * shadowMask;
+          // Des-sombrado adaptativo calibrado: elimina manchas de arcade y pesas,
+          // manteniendo la dinámica de separación de ranuras y vetas
+          float shadowMask = clamp((0.44 - lum) / 0.36, 0.0, 1.0);
+          float liftedLum = lum + 0.30 * shadowMask;
 
-          // Textura lineal limpia de tablillas: acabado mate satinado isométrico suave
-          // Ranura divisoria limpia (~0.40) y cuerpo/veta de tablilla sedosa (~1.05)
-          float slatClean = 0.40 + 0.65 * clamp((liftedLum - 0.16) / 0.32, 0.0, 1.0);
+          // Curva de tablilla con ranuras marcadas (0.36) y cuerpo definido (1.15):
+          // Produce contraste visual claro (delta ~48 ptos) para que la tablilla se distinga nítidamente
+          float slatFactor = 0.36 + 0.76 * clamp((liftedLum - 0.36) / 0.07, 0.0, 1.15);
 
-          // Color beige claro cálido minimalista en espacio lineal (compensando GammaCorrectionShader)
-          vec3 beigeLinear = vec3(0.796, 0.697, 0.589);
+          // Tono cálido roble suave / café tostado ligero (espacio lineal compensando GammaCorrectionShader)
+          vec3 woodLinear = vec3(0.50, 0.34, 0.22);
 
-          diffuseColor.rgb = beigeLinear * slatClean;
+          diffuseColor.rgb = woodLinear * slatFactor;
         #endif
         `
       );

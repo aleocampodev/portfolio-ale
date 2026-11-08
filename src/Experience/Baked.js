@@ -38,43 +38,42 @@ export default class Baked {
     });
 
     // Material exclusivo para el piso en café suave (#E5C9B6) sin sombras de arcade ni pesas
-    const floorColor = new Color("#E5C9B6");
     const floorMaterial = new MeshBasicMaterial({
       map: this.bakedTexture1,
-      color: floorColor,
     });
+    floorMaterial.customProgramCacheKey = () => "floorCoffeeShader_v2";
 
     floorMaterial.onBeforeCompile = (shader) => {
       shader.fragmentShader = shader.fragmentShader.replace(
-        "diffuseColor *= sampledDiffuseColor;",
+        "#include <map_fragment>",
         `
-        // Eliminar sombras oscuras residuales (arcade y pesas) preservando la textura del piso
-        float lum = dot(sampledDiffuseColor.rgb, vec3(0.299, 0.587, 0.114));
-        float shadowFactor = smoothstep(0.05, 0.60, lum);
-        vec3 lifted = sampledDiffuseColor.rgb * (0.65 / max(lum, 0.12));
-        sampledDiffuseColor.rgb = mix(lifted, sampledDiffuseColor.rgb, shadowFactor);
-        diffuseColor *= sampledDiffuseColor;
+        #ifdef USE_MAP
+          vec4 sampledDiffuseColor = texture2D( map, vMapUv );
+          #ifdef DECODE_VIDEO_TEXTURE
+            sampledDiffuseColor = vec4( mix( pow( sampledDiffuseColor.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), sampledDiffuseColor.rgb * 0.0773993808, vec3( lessThanEqual( sampledDiffuseColor.rgb, vec3( 0.04045 ) ) ) ), sampledDiffuseColor.w );
+          #endif
+
+          // Extraer luminancia y detalle de veta/madera
+          float lum = dot(sampledDiffuseColor.rgb, vec3(0.299, 0.587, 0.114));
+          // Normalizar veta eliminando sombras residuales de arcade y pesas
+          float grain = clamp(lum / 0.45, 0.85, 1.20);
+
+          // Color café suave exacto #E5C9B6 (sRGB / lineal balanceado)
+          vec3 coffeeBase = vec3(0.898, 0.788, 0.714);
+          diffuseColor.rgb = coffeeBase * grain;
+        #endif
         `
       );
     };
 
     this.model.room1.traverse((child) => {
       if (child.isMesh) {
-        if (Array.isArray(child.material)) {
-          child.material = child.material.map((m, idx) => {
-            const name = (m && m.name) ? m.name.toLowerCase() : "";
-            if (name.includes("piso") || idx === 2) {
-              return floorMaterial;
-            }
-            return this.model.material;
-          });
+        const matName = (child.material && child.material.name) ? child.material.name.toLowerCase() : "";
+        const meshName = child.name ? child.name.toLowerCase() : "";
+        if (matName.includes("piso") || meshName.includes("piso") || child.name === "Plane001_2") {
+          child.material = floorMaterial;
         } else {
-          const name = (child.material && child.material.name) ? child.material.name.toLowerCase() : "";
-          if (name.includes("piso")) {
-            child.material = floorMaterial;
-          } else {
-            child.material = this.model.material;
-          }
+          child.material = this.model.material;
         }
       }
     });

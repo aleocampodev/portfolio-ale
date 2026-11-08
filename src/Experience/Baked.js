@@ -11,10 +11,20 @@ export default class Baked {
     this.setModels();
   }
 
-  setMaterial = (object, material) => {
+  setMaterial = (object, defaultBakedMaterial) => {
     object.traverse((child) => {
       if (child.isMesh) {
-        child.material = material;
+        // Si el objeto tiene un material con color personalizado en Blender (no el gris por defecto)
+        if (child.material && child.material.color) {
+          const c = child.material.color;
+          const isDefaultGray = Math.abs(c.r - 0.8) < 0.05 && Math.abs(c.g - 0.8) < 0.05 && Math.abs(c.b - 0.8) < 0.05;
+          if (!isDefaultGray) {
+            // Respetar el color cambiado en Blender
+            child.material = new MeshBasicMaterial({ color: c, map: child.material.map || null });
+            return;
+          }
+        }
+        child.material = defaultBakedMaterial;
       }
     });
   };

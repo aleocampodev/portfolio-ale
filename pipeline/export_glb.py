@@ -61,6 +61,9 @@ export_objects(os.path.join(models_dir, 'room3.glb'), ['BAKED_3', 'Cover', 'Inte
 export_objects(os.path.join(models_dir, 'topChair.glb'), ['TopChair'])
 export_objects(os.path.join(models_dir, 'whiteboard.glb'), ['Whiteboard', 'Whiteboard_Canvas'])
 export_objects(os.path.join(models_dir, 'Rubik.glb'), ['Rubik', 'Cube'])
+export_objects(os.path.join(models_dir, 'github.glb'), ['Github'])
+export_objects(os.path.join(models_dir, 'linkedin.glb'), ['Linkedin'])
+export_objects(os.path.join(models_dir, 'itchio.glb'), ['Itchio'])
 
 # 3. Check Carpet presence
 carpet_objs = [o for o in bpy.data.objects if 'carpet' in o.name.lower()]

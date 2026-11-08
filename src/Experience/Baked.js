@@ -35,10 +35,10 @@ export default class Baked {
             });
           }
 
-          // 3. Zócalo (Material_Socalo / Material_socalo)
+          // 3. Zócalo (Material_Socalo / Material_socalo) -> Blanco puro/hueso según configuración de Blender
           if (name.includes("Material_Socalo") || name.includes("Material_socalo")) {
             return new MeshBasicMaterial({
-              color: new Color(0.18, 0.12, 0.09),
+              color: new Color(0.98, 0.98, 0.98),
             });
           }
 

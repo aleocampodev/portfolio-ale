@@ -32,7 +32,6 @@ export default class World extends EventEmitter {
         this.setTopChair();
 
         this.setLeftMonitorScreen();
-        this.setRightMonitorScreen();
         this.setSkybox();
         this.setConfetti();
         this.setCoffeeSteam();

@@ -56,6 +56,7 @@ print("[PIPELINE]  ✔ Exportado unified_room.glb")
 
 # 2. Export individual modular components for Three.js with exact Blender names
 export_objects(os.path.join(models_dir, 'room.glb'), ['BAKED_1', 'Claqueta'])
+export_objects(os.path.join(models_dir, 'floor.glb'), ['Floor'])
 export_objects(os.path.join(models_dir, 'room2.glb'), ['BAKED_2', 'LeftMonitor', 'RightMonitor'])
 export_objects(os.path.join(models_dir, 'room3.glb'), ['BAKED_3', 'Cover', 'Interior', 'Github', 'Linkedin', 'Itchio'])
 export_objects(os.path.join(models_dir, 'topChair.glb'), ['TopChair'])

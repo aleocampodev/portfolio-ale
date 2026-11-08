@@ -14,17 +14,28 @@ export default class Baked {
   setMaterial = (object, defaultBakedMaterial) => {
     object.traverse((child) => {
       if (child.isMesh) {
-        // Si el objeto tiene un material con color personalizado en Blender (no el gris por defecto)
-        if (child.material && child.material.color) {
-          const c = child.material.color;
-          const isDefaultGray = Math.abs(c.r - 0.8) < 0.05 && Math.abs(c.g - 0.8) < 0.05 && Math.abs(c.b - 0.8) < 0.05;
-          if (!isDefaultGray) {
-            // Respetar el color cambiado en Blender
-            child.material = new MeshBasicMaterial({ color: c, map: child.material.map || null });
-            return;
+        if (Array.isArray(child.material)) {
+          child.material = child.material.map((mat) => {
+            if (mat && mat.color) {
+              const c = mat.color;
+              const isDefaultGray = Math.abs(c.r - 0.8) < 0.05 && Math.abs(c.g - 0.8) < 0.05 && Math.abs(c.b - 0.8) < 0.05;
+              if (!isDefaultGray) {
+                return new MeshBasicMaterial({ color: c, map: mat.map || null });
+              }
+            }
+            return defaultBakedMaterial;
+          });
+        } else {
+          if (child.material && child.material.color) {
+            const c = child.material.color;
+            const isDefaultGray = Math.abs(c.r - 0.8) < 0.05 && Math.abs(c.g - 0.8) < 0.05 && Math.abs(c.b - 0.8) < 0.05;
+            if (!isDefaultGray) {
+              child.material = new MeshBasicMaterial({ color: c, map: child.material.map || null });
+              return;
+            }
           }
+          child.material = defaultBakedMaterial;
         }
-        child.material = defaultBakedMaterial;
       }
     });
   };

@@ -37,12 +37,26 @@ export default class Baked {
       map: this.bakedTexture1,
     });
 
-    // Material exclusivo para el piso en café suave preservando textura horneada
-    const floorColor = new Color("#d2a078"); // Café suave (soft warm coffee / latte)
+    // Material exclusivo para el piso en café suave (#E5C9B6) sin sombras de arcade ni pesas
+    const floorColor = new Color("#E5C9B6");
     const floorMaterial = new MeshBasicMaterial({
       map: this.bakedTexture1,
       color: floorColor,
     });
+
+    floorMaterial.onBeforeCompile = (shader) => {
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "diffuseColor *= sampledDiffuseColor;",
+        `
+        // Eliminar sombras oscuras residuales (arcade y pesas) preservando la textura del piso
+        float lum = dot(sampledDiffuseColor.rgb, vec3(0.299, 0.587, 0.114));
+        float shadowFactor = smoothstep(0.05, 0.60, lum);
+        vec3 lifted = sampledDiffuseColor.rgb * (0.65 / max(lum, 0.12));
+        sampledDiffuseColor.rgb = mix(lifted, sampledDiffuseColor.rgb, shadowFactor);
+        diffuseColor *= sampledDiffuseColor;
+        `
+      );
+    };
 
     this.model.room1.traverse((child) => {
       if (child.isMesh) {

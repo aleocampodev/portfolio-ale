@@ -5,7 +5,6 @@ import CoffeeSteam from "./CoffeeSteam.js";
 import Skybox from "./Skybox.js";
 import TopChair from "./TopChair.js";
 import Whiteboard from "./Whiteboard.js";
-import Carpet from "./Carpet.js";
 import LeftMonitorScreen from "./LeftMonitorScreen.js";
 import RubiksCube from "./RubiksCube.js";
 import Confetti from "./Confetti.js";
@@ -27,7 +26,6 @@ export default class World extends EventEmitter {
         this.setBaked();
 
         this.setWhiteboard();
-        this.setCarpet();
         this.setTopChair();
 
         this.setLeftMonitorScreen();
@@ -68,10 +66,6 @@ export default class World extends EventEmitter {
 
   setWhiteboard() {
     this.whiteboard = new Whiteboard();
-  }
-
-  setCarpet() {
-    this.carpet = new Carpet();
   }
 
   setLeftMonitorScreen() {

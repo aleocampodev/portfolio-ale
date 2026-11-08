@@ -37,8 +37,8 @@ export default class Baked {
       map: this.bakedTexture1,
     });
 
-    // Material exclusivo para el piso en café suave preservando iluminación horneada
-    const floorColor = new Color("#967252"); // Café suave / warm soft coffee
+    // Material exclusivo para el piso en café suave preservando textura horneada
+    const floorColor = new Color("#d2a078"); // Café suave (soft warm coffee / latte)
     const floorMaterial = new MeshBasicMaterial({
       map: this.bakedTexture1,
       color: floorColor,

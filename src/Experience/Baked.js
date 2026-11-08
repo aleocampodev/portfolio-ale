@@ -1,6 +1,5 @@
 import { Mesh, MeshBasicMaterial, SRGBColorSpace } from "three";
 import Experience from "./Experience.js";
-import { createParquetTexture } from "./Utils/FloorTexture.js";
 
 export default class Baked {
   constructor() {
@@ -9,46 +8,13 @@ export default class Baked {
     this.scene = this.experience.scene;
     this.renderer = this.experience.renderer.instance;
     this.maxAnisotropy = this.renderer.capabilities.getMaxAnisotropy();
-    this.parquetTexture = createParquetTexture();
     this.setModels();
   }
 
-  setMaterial = (object, defaultBakedMaterial) => {
+  setMaterial = (object, material) => {
     object.traverse((child) => {
       if (child.isMesh) {
-        if (Array.isArray(child.material)) {
-          child.material = child.material.map((mat) => {
-            if (mat) {
-              if (mat.name && mat.name.includes("Material_Piso")) {
-                return new MeshBasicMaterial({ map: this.parquetTexture });
-              }
-              if (mat.color) {
-                const c = mat.color;
-                const isDefaultGray = Math.abs(c.r - 0.8) < 0.05 && Math.abs(c.g - 0.8) < 0.05 && Math.abs(c.b - 0.8) < 0.05;
-                if (!isDefaultGray) {
-                  return new MeshBasicMaterial({ color: c, map: mat.map || null });
-                }
-              }
-            }
-            return defaultBakedMaterial;
-          });
-        } else {
-          if (child.material) {
-            if (child.material.name && child.material.name.includes("Material_Piso")) {
-              child.material = new MeshBasicMaterial({ map: this.parquetTexture });
-              return;
-            }
-            if (child.material.color) {
-              const c = child.material.color;
-              const isDefaultGray = Math.abs(c.r - 0.8) < 0.05 && Math.abs(c.g - 0.8) < 0.05 && Math.abs(c.b - 0.8) < 0.05;
-              if (!isDefaultGray) {
-                child.material = new MeshBasicMaterial({ color: c, map: child.material.map || null });
-                return;
-              }
-            }
-          }
-          child.material = defaultBakedMaterial;
-        }
+        child.material = material;
       }
     });
   };

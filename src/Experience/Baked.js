@@ -12,6 +12,7 @@ export default class Baked {
   }
 
   setMaterial = (object, material) => {
+    if (!object) return;
     object.traverse((child) => {
       if (child.isMesh) {
         child.material = material;
@@ -20,6 +21,7 @@ export default class Baked {
   };
 
   configureTexture = (texture) => {
+    if (!texture) return null;
     texture.anisotropy = this.maxAnisotropy;
     texture.colorSpace = SRGBColorSpace;
     texture.needsUpdate = true;
@@ -47,7 +49,27 @@ export default class Baked {
       map: this.bakedTexture3,
     });
 
-    // Mapeo original y directo de texturas horneadas tal cual joanramosrefusta.com
+    if (this.resources.items.linkedin) {
+      this.model.linkedin = this.resources.items.linkedin.scene;
+      this.model.linkedin.name = "linkedin";
+      this.setMaterial(this.model.linkedin, this.model.material3);
+      this.scene.add(this.model.linkedin);
+    }
+
+    if (this.resources.items.github) {
+      this.model.github = this.resources.items.github.scene;
+      this.model.github.name = "github";
+      this.setMaterial(this.model.github, this.model.material3);
+      this.scene.add(this.model.github);
+    }
+
+    if (this.resources.items.itchio) {
+      this.model.itchio = this.resources.items.itchio.scene;
+      this.model.itchio.name = "itchio";
+      this.setMaterial(this.model.itchio, this.model.material3);
+      this.scene.add(this.model.itchio);
+    }
+
     this.setMaterial(this.model.room1, this.model.material);
     this.setMaterial(this.model.room2, this.model.material2);
     this.setMaterial(this.model.room3, this.model.material3);

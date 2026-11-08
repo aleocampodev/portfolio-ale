@@ -37,11 +37,11 @@ export default class Baked {
       map: this.bakedTexture1,
     });
 
-    // Material exclusivo para el piso en café suave (#E5C9B6) sin sombras de arcade ni pesas
+    // Material exclusivo para el piso en café claro preservando 100% la textura original horneada
     const floorMaterial = new MeshBasicMaterial({
       map: this.bakedTexture1,
     });
-    floorMaterial.customProgramCacheKey = () => "floorCoffeeShader_v2";
+    floorMaterial.customProgramCacheKey = () => "floorLightCoffee_v4";
 
     floorMaterial.onBeforeCompile = (shader) => {
       shader.fragmentShader = shader.fragmentShader.replace(
@@ -52,15 +52,11 @@ export default class Baked {
           #ifdef DECODE_VIDEO_TEXTURE
             sampledDiffuseColor = vec4( mix( pow( sampledDiffuseColor.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), sampledDiffuseColor.rgb * 0.0773993808, vec3( lessThanEqual( sampledDiffuseColor.rgb, vec3( 0.04045 ) ) ) ), sampledDiffuseColor.w );
           #endif
+          // Textura original horneada intacta (vetas, tablas, luz)
+          diffuseColor *= sampledDiffuseColor;
 
-          // Extraer luminancia y detalle de veta/madera
-          float lum = dot(sampledDiffuseColor.rgb, vec3(0.299, 0.587, 0.114));
-          // Normalizar veta eliminando sombras residuales de arcade y pesas
-          float grain = clamp(lum / 0.45, 0.85, 1.20);
-
-          // Color café suave exacto #E5C9B6 en espacio lineal (para que tras GammaCorrectionPass sea 100% #E5C9B6)
-          vec3 coffeeBase = vec3(0.7835, 0.5843, 0.4678);
-          diffuseColor.rgb = coffeeBase * grain;
+          // Tono café claro: levanta sombras y aporta calidez natural de madera clara
+          diffuseColor.rgb = pow(diffuseColor.rgb, vec3(0.80)) * vec3(1.22, 1.12, 1.02);
         #endif
         `
       );

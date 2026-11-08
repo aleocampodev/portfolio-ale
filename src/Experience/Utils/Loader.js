@@ -251,6 +251,8 @@ export default class Resources extends EventEmitter {
           this.loadingScreen.removeEventListener("click", clickHandler);
         };
         this.loadingScreen.addEventListener("click", clickHandler);
+        // Auto-iniciar inmediatamente al completar la carga
+        clickHandler();
       }, 1000);
     }
 

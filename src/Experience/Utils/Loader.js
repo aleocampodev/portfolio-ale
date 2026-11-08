@@ -243,10 +243,9 @@ export default class Resources extends EventEmitter {
         this.loadingScreen.classList.remove("finished-load");
 
         const clickHandler = () => {
-          const audioManager = this.experience.world.audioManager;
-          // audioManager.playSingleAudio("start", 0.4);
-          // audioManager.playLoopAudio("floral", 0.1);
+          // Sonido desactivado
           this.audioButton.classList.add("show-audio-button");
+          this.audioButton.classList.add("audio-button-muted");
           this.loadingScreen.classList.remove("show-loading-screen");
           this.removeOverlay();
           this.loadingScreen.removeEventListener("click", clickHandler);

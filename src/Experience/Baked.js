@@ -110,12 +110,6 @@ export default class Baked {
     this.model.itchio.name = "itchio";
 
     this.setMaterial(this.model.room1, this.model.material);
-    if (this.resources.items.floorModel) {
-      this.model.floor = this.resources.items.floorModel.scene;
-      this.model.floor.name = "floor";
-      this.setMaterial(this.model.floor, this.model.material);
-      this.scene.add(this.model.floor);
-    }
     this.setMaterial(this.model.room2, this.model.material2);
     this.setMaterial(this.model.room3, this.model.material3);
     this.setMaterial(this.model.linkedin, this.model.material3);

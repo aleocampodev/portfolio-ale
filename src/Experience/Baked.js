@@ -38,11 +38,11 @@ export default class Baked {
     });
 
     // Material exclusivo para el piso en Roble Escandinavo (#D4B293)
-    // Preserva las tablillas de madera reales (ranuras y vetas) y desacopla sombras de arcade/pesas
+    // Preserva y resalta las tablillas de madera reales (ranuras y vetas) sin sombras residuales
     const floorMaterial = new MeshBasicMaterial({
       map: this.bakedTexture1,
     });
-    floorMaterial.customProgramCacheKey = () => "floorScandinavianOak_v7";
+    floorMaterial.customProgramCacheKey = () => "floorScandinavianOak_v8";
 
     floorMaterial.onBeforeCompile = (shader) => {
       shader.fragmentShader = shader.fragmentShader.replace(
@@ -62,11 +62,11 @@ export default class Baked {
           float liftedLum = lum + 0.38 * shadowMask;
 
           // Relieve de tablillas y vetas de madera:
-          // Ranuras divisorias oscuras (~0.25) y cuerpo/veta de la tabla (1.0 - 1.25)
-          float slatFactor = clamp((liftedLum - 0.18) / 0.36, 0.25, 1.25);
+          // Ranuras divisorias oscuras (~0.25) y cuerpo/veta de la tabla (1.0 - 1.30)
+          float slatFactor = clamp((liftedLum - 0.15) / 0.33, 0.25, 1.30);
 
           // Tono Roble Escandinavo (#D4B293) en espacio lineal calibrado para GammaCorrectionShader
-          vec3 oakLinear = vec3(0.6184, 0.4210, 0.2763);
+          vec3 oakLinear = vec3(0.6661, 0.4535, 0.2977);
 
           diffuseColor.rgb = oakLinear * slatFactor;
         #endif

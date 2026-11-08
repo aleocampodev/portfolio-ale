@@ -1,4 +1,4 @@
-import { MeshBasicMaterial, SRGBColorSpace } from "three";
+import { MeshBasicMaterial, SRGBColorSpace, Color } from "three";
 import Experience from "./Experience.js";
 
 export default class Baked {
@@ -37,6 +37,34 @@ export default class Baked {
       map: this.bakedTexture1,
     });
 
+    // Material exclusivo para el piso en café suave preservando iluminación horneada
+    const floorColor = new Color("#967252"); // Café suave / warm soft coffee
+    const floorMaterial = new MeshBasicMaterial({
+      map: this.bakedTexture1,
+      color: floorColor,
+    });
+
+    this.model.room1.traverse((child) => {
+      if (child.isMesh) {
+        if (Array.isArray(child.material)) {
+          child.material = child.material.map((m, idx) => {
+            const name = (m && m.name) ? m.name.toLowerCase() : "";
+            if (name.includes("piso") || idx === 2) {
+              return floorMaterial;
+            }
+            return this.model.material;
+          });
+        } else {
+          const name = (child.material && child.material.name) ? child.material.name.toLowerCase() : "";
+          if (name.includes("piso")) {
+            child.material = floorMaterial;
+          } else {
+            child.material = this.model.material;
+          }
+        }
+      }
+    });
+
     this.model.room2 = this.resources.items._roomModel2.scene;
     this.bakedTexture2 = this.configureTexture(this.resources.items.baked2);
     this.model.material2 = new MeshBasicMaterial({
@@ -70,7 +98,6 @@ export default class Baked {
       this.scene.add(this.model.itchio);
     }
 
-    this.setMaterial(this.model.room1, this.model.material);
     this.setMaterial(this.model.room2, this.model.material2);
     this.setMaterial(this.model.room3, this.model.material3);
 

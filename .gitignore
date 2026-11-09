@@ -8,6 +8,9 @@ dist/
 *.blend1
 backup/
 
+# Local agent artifacts
+.playwright-mcp/
+
 # Scratch scripts
 build_*.py
 fix_*.py

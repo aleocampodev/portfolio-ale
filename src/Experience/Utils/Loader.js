@@ -49,7 +49,7 @@ export default class Resources extends EventEmitter {
 
     // Images
     this.loaders.push({
-      extensions: ["jpg", "png"],
+      extensions: ["jpg", "jpeg", "png", "webp"],
       action: (_resource) => {
         const image = new Image();
 
@@ -155,38 +155,12 @@ export default class Resources extends EventEmitter {
   }
 
   setOverlayLoading() {
-    this.overlayGeometry = new PlaneGeometry(2, 2, 1, 1);
-    this.overlayMaterial = new ShaderMaterial({
-      transparent: true,
-      depthTest: false,
-      uniforms: {
-        uColor: { value: new Color(0x072446) },
-        uAlpha: { value: 1 },
-      },
-      vertexShader: vertexShader,
-      fragmentShader: fragmentShader,
-    });
-    this.overlay = new Mesh(this.overlayGeometry, this.overlayMaterial);
-    this.scene.add(this.overlay);
+    // Overlay desactivado para que nunca bloquee la cámara
   }
 
   removeOverlay = () => {
-    gsap.to(this.overlayMaterial.uniforms.uAlpha, {
-      duration: 0.5,
-      value: 0,
-      delay: 1,
-      ease: "sine.in",
-      onComplete: () => {
-        this.overlayGeometry.dispose();
-        this.overlayMaterial.dispose();
-        this.scene.remove(this.overlay);
-        this.resourcesLoaded = true;
-      },
-      onStart: () => {
-        this.banner.style.top = "0px";
-        this.experience.navigation.orbitControls.enabled = true;
-      },
-    });
+    this.experience.navigation.orbitControls.enabled = true;
+    this.resourcesLoaded = true;
   };
 
   /**
@@ -200,7 +174,7 @@ export default class Resources extends EventEmitter {
         if (_resource.type === "cubeTexture") {
           return _loader.extensions.includes("cubeTexture");
         } else {
-          const extensionMatch = _resource.source.match(/\.([a-zA-Z0-9]+)$/);
+          const extensionMatch = _resource.source.match(/\.([a-zA-Z0-9]+)(?:[?#].*)?$/);
           const extension = extensionMatch ? extensionMatch[1] : null;
           return extension && _loader.extensions.includes(extension);
         }
@@ -212,7 +186,7 @@ export default class Resources extends EventEmitter {
         if (_resource.type === "cubeTexture") {
           console.warn("Cannot found loader for cubeTexture");
         } else {
-          const extensionMatch = _resource.source.match(/\.([a-zA-Z0-9]+)$/);
+          const extensionMatch = _resource.source.match(/\.([a-zA-Z0-9]+)(?:[?#].*)?$/);
           const extension = extensionMatch ? extensionMatch[1] : null;
           if (extension) {
             console.warn(`Cannot found loader for ${extension}`);
@@ -243,15 +217,16 @@ export default class Resources extends EventEmitter {
         this.loadingScreen.classList.remove("finished-load");
 
         const clickHandler = () => {
-          const audioManager = this.experience.world.audioManager;
-          audioManager.playSingleAudio("start", 0.4);
-          audioManager.playLoopAudio("floral", 0.1);
+          // Sonido desactivado
           this.audioButton.classList.add("show-audio-button");
+          this.audioButton.classList.add("audio-button-muted");
           this.loadingScreen.classList.remove("show-loading-screen");
           this.removeOverlay();
           this.loadingScreen.removeEventListener("click", clickHandler);
         };
         this.loadingScreen.addEventListener("click", clickHandler);
+        // Auto-iniciar inmediatamente al completar la carga
+        clickHandler();
       }, 1000);
     }
 

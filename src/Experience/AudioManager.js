@@ -8,7 +8,7 @@ export default class AudioManager {
     this.scene = this.experience.scene;
     this.camera = this.experience.camera.instance;
     this.audioButton = document.querySelector(".audio-button");
-    this.isMuted = false;
+    this.isMuted = true;
     this.hasStarted = false;
     this.audioListeners = [];
     this.setAudioManager();

@@ -1,5 +1,14 @@
-import { Mesh, MeshBasicMaterial, SRGBColorSpace } from "three";
+import {
+  DirectionalLight,
+  DoubleSide,
+  Mesh,
+  MeshBasicMaterial,
+  PCFSoftShadowMap,
+  SRGBColorSpace,
+  ShadowMaterial,
+} from "three";
 import Experience from "./Experience.js";
+import { applyFloorWood } from "./Utils/FloorWoodTexture.js";
 
 export default class Baked {
   constructor() {
@@ -12,6 +21,7 @@ export default class Baked {
   }
 
   setMaterial = (object, material) => {
+    if (!object) return;
     object.traverse((child) => {
       if (child.isMesh) {
         child.material = material;
@@ -20,6 +30,7 @@ export default class Baked {
   };
 
   configureTexture = (texture) => {
+    if (!texture) return null;
     texture.anisotropy = this.maxAnisotropy;
     texture.colorSpace = SRGBColorSpace;
     texture.needsUpdate = true;
@@ -29,78 +40,170 @@ export default class Baked {
   setModels = () => {
     this.model = {};
 
-    if (this.resources.items.unifiedRoom && this.useUnifiedRoom) {
-      this.model.unified = this.resources.items.unifiedRoom.scene;
-
-      this.bakedTexture1 = this.configureTexture(this.resources.items.baked1);
-      this.bakedTexture2 = this.configureTexture(this.resources.items.baked2);
-      this.bakedTexture3 = this.configureTexture(this.resources.items.baked3);
-
-      this.matBaked1 = new MeshBasicMaterial({ map: this.bakedTexture1 });
-      this.matBaked2 = new MeshBasicMaterial({ map: this.bakedTexture2 });
-      this.matBaked3 = new MeshBasicMaterial({ map: this.bakedTexture3 });
-
-      this.model.unified.traverse((child) => {
-        if (child.isMesh) {
-          const name = child.name;
-          if (name.includes('BAKED_1') || name.includes('Claqueta') || name.includes('Whiteboard')) {
-            child.material = this.matBaked1;
-          } else if (name.includes('BAKED_2') || name.includes('TopChair') || name.includes('LeftMonitor') || name.includes('RightMonitor') || name.includes('arcadeMachine')) {
-            child.material = this.matBaked2;
-          } else if (name.includes('BAKED_3') || name.includes('Linkedin') || name.includes('Github') || name.includes('Itchio')) {
-            child.material = this.matBaked3;
-          } else if (!child.material || child.material.type === 'MeshStandardMaterial') {
-            // Fallback unlit
-            child.material = new MeshBasicMaterial({ color: child.material.color, map: child.material.map });
-          }
-        }
-      });
-
-      this.scene.add(this.model.unified);
-      return;
-    }
-
     this.model.room1 = this.resources.items._roomModel.scene;
-
     this.bakedTexture1 = this.configureTexture(this.resources.items.baked1);
+    // El lightmap de la sala llega como imagen (webp): desactivamos el volteo
+    // vertical para que las UV coincidan con el bake original.
+    if (this.bakedTexture1) {
+      this.bakedTexture1.flipY = false;
+      this.bakedTexture1.needsUpdate = true;
+    }
     this.model.material = new MeshBasicMaterial({
       map: this.bakedTexture1,
     });
 
+    // El piso no usa el lightmap: lleva madera procedural continua, sin las
+    // sombras horneadas de la alfombra, el arcade y las pesas.
+    let floorMaterial = null;
+
+    // El zocalo de la pared derecha es una tira 3D propia (Material_Socalo) cuya
+    // zona del atlas esta horneada en negro por la sombra del arcade. Como es una
+    // tira simple, se pinta con un blanco plano: uniforme de esquina a esquina.
+    const skirtingMaterial = new MeshBasicMaterial({ color: 0xf6f5f1 });
+
+    this.model.room1.traverse((child) => {
+      if (child.isMesh) {
+        const matName = (child.material && child.material.name) ? child.material.name.toLowerCase() : "";
+        const meshName = child.name ? child.name.toLowerCase() : "";
+        const isSkirting = matName.includes("socalo") || meshName.includes("socalo");
+        const isFloor =
+          matName.includes("piso") || meshName.includes("piso") || child.name === "Plane001_2";
+
+        if (isSkirting) {
+          child.material = skirtingMaterial;
+        } else if (isFloor) {
+          if (!floorMaterial) {
+            floorMaterial = applyFloorWood(child, { anisotropy: this.maxAnisotropy });
+          }
+          child.material = floorMaterial || this.model.material;
+          this.floorMesh = child;
+        } else {
+          child.material = this.model.material;
+        }
+      }
+    });
+
     this.model.room2 = this.resources.items._roomModel2.scene;
     this.bakedTexture2 = this.configureTexture(this.resources.items.baked2);
-
     this.model.material2 = new MeshBasicMaterial({
       map: this.bakedTexture2,
     });
 
     this.model.room3 = this.resources.items._roomModel3.scene;
     this.bakedTexture3 = this.configureTexture(this.resources.items.baked3);
-
     this.model.material3 = new MeshBasicMaterial({
       map: this.bakedTexture3,
     });
 
-    this.model.linkedin = this.resources.items.linkedin.scene;
-    this.model.linkedin.name = "linkedin";
-    this.model.github = this.resources.items.github.scene;
-    this.model.github.name = "github";
-    this.model.itchio = this.resources.items.itchio.scene;
-    this.model.itchio.name = "itchio";
+    if (this.resources.items.linkedin) {
+      this.model.linkedin = this.resources.items.linkedin.scene;
+      this.model.linkedin.name = "linkedin";
+      this.setMaterial(this.model.linkedin, this.model.material3);
+      this.scene.add(this.model.linkedin);
+    }
 
-    this.setMaterial(this.model.room1, this.model.material);
+    if (this.resources.items.github) {
+      this.model.github = this.resources.items.github.scene;
+      this.model.github.name = "github";
+      this.setMaterial(this.model.github, this.model.material3);
+      this.scene.add(this.model.github);
+    }
+
+    if (this.resources.items.itchio) {
+      this.model.itchio = this.resources.items.itchio.scene;
+      this.model.itchio.name = "itchio";
+      this.setMaterial(this.model.itchio, this.model.material3);
+      this.scene.add(this.model.itchio);
+    }
+
     this.setMaterial(this.model.room2, this.model.material2);
     this.setMaterial(this.model.room3, this.model.material3);
-    this.setMaterial(this.model.linkedin, this.model.material3);
-    this.setMaterial(this.model.github, this.model.material3);
-    this.setMaterial(this.model.itchio, this.model.material3);
 
     this.scene.add(this.model.room1);
     this.scene.add(this.model.room2);
     this.scene.add(this.model.room3);
 
-    this.scene.add(this.model.linkedin);
-    this.scene.add(this.model.github);
-    this.scene.add(this.model.itchio);
+    this.setShadows();
+  };
+
+  /**
+   * Sombras reales proyectadas sobre el piso.
+   *
+   * La sala esta horneada (todo `MeshBasicMaterial`, sin luces), asi que en vez
+   * de iluminarla se anade:
+   *  - una luz direccional que solo sirve para generar el mapa de sombras,
+   *  - un plano extra con `ShadowMaterial` pegado al suelo, que es lo unico que
+   *    recibe sombra.
+   * Resultado: sombras con la forma real de cada objeto (hojas, asiento, patas)
+   * sin alterar ni un pixel del bake de paredes y muebles.
+   */
+  setShadows = () => {
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = PCFSoftShadowMap;
+    // El escenario es casi estatico: recalcular el mapa de sombras cada frame
+    // cuesta mas de la mitad del rendimiento, asi que se refresca a ~4 Hz.
+    this.renderer.shadowMap.autoUpdate = false;
+    this.renderer.shadowMap.needsUpdate = true;
+    if (this.shadowTimer) clearInterval(this.shadowTimer);
+    this.shadowTimer = setInterval(() => {
+      this.renderer.shadowMap.needsUpdate = true;
+    }, 250);
+
+    // Solo los objetos proyectan. Los muros y el suelo no, porque taparian la
+    // luz y la sala entera quedaria en sombra (no hay techo).
+    [this.model.room2, this.model.room3, this.model.linkedin, this.model.github, this.model.itchio].forEach(
+      (root) => {
+        if (!root) return;
+        root.traverse((child) => {
+          if (!child.isMesh) return;
+          child.castShadow = true;
+          // Las hojas son planos de una sola cara: si el mapa de sombras culea
+          // las caras traseras, solo proyectan los bordes (lineas finas).
+          if (child.material) child.material.shadowSide = DoubleSide;
+        });
+      }
+    );
+
+    // La luz entra por la ventana (pared +x) y cae hacia -x / -z.
+    this.shadowLight = new DirectionalLight(0xffffff, 1);
+    this.shadowLight.castShadow = true;
+    this.shadowLight.position.set(8, 14, -2);
+    this.shadowLight.target.position.set(0, 0, 0);
+    this.scene.add(this.shadowLight);
+    this.scene.add(this.shadowLight.target);
+
+    const shadowCamera = this.shadowLight.shadow.camera;
+    shadowCamera.left = -8;
+    shadowCamera.right = 8;
+    shadowCamera.top = 8;
+    shadowCamera.bottom = -8;
+    shadowCamera.near = 1;
+    shadowCamera.far = 60;
+    shadowCamera.updateProjectionMatrix();
+
+    this.shadowLight.shadow.mapSize.set(4096, 4096);
+    this.shadowLight.shadow.bias = -0.0006;
+    this.shadowLight.shadow.normalBias = 0.02;
+    this.shadowLight.shadow.radius = 1;
+
+    if (!this.floorMesh) return;
+
+    this.shadowMaterial = new ShadowMaterial({
+      color: 0x000000,
+      opacity: 0.55,
+      transparent: true,
+      depthWrite: false,
+    });
+
+    this.shadowPlane = new Mesh(this.floorMesh.geometry, this.shadowMaterial);
+    this.shadowPlane.name = "ShadowPlane";
+    this.shadowPlane.matrixAutoUpdate = false;
+    this.shadowPlane.matrix.copy(this.floorMesh.matrixWorld);
+    // 4 mm por encima del piso para evitar z-fighting.
+    this.shadowPlane.matrix.elements[13] += 0.004;
+    this.shadowPlane.receiveShadow = true;
+    this.shadowPlane.castShadow = false;
+    this.shadowPlane.renderOrder = 1;
+    this.scene.add(this.shadowPlane);
   };
 }

@@ -20,8 +20,10 @@ export default [
         type: "texture",
       },
       {
+        // ?v= se sube cada vez que se regenera la textura para saltar la cache
+        // del navegador (misma ruta, contenido nuevo).
         name: "baked1",
-        source: "/assets/textures/baked1.ktx2",
+        source: "/assets/textures/baked1_clean.webp?v=20261109j",
         type: "texture",
       },
       {

@@ -46,8 +46,6 @@ export default [
       { name: "_roomModel3", source: "/assets/models/room3.glb" },
       { name: "whiteboard", source: "/assets/models/whiteboard.glb" },
       { name: "leftMonitor", source: "/assets/models/leftMonitor.glb" },
-      { name: "rightMonitor", source: "/assets/models/rightMonitor.glb" },
-      { name: "arcadeMachine", source: "/assets/models/arcadeMachine.glb" },
       { name: "linkedin", source: "/assets/models/linkedin.glb" },
       { name: "github", source: "/assets/models/github.glb" },
       { name: "itchio", source: "/assets/models/itchio.glb" },

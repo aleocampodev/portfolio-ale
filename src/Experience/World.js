@@ -2,14 +2,11 @@ import EventEmitter from "./Utils/EventEmitter.js";
 import Experience from "./Experience.js";
 import Baked from "./Baked.js";
 import CoffeeSteam from "./CoffeeSteam.js";
+import Skybox from "./Skybox.js";
 import TopChair from "./TopChair.js";
 import Whiteboard from "./Whiteboard.js";
-import Carpet from "./Carpet.js";
-import ArcadeScreen from "./ArcadeScreen.js";
 import LeftMonitorScreen from "./LeftMonitorScreen.js";
-import RightMonitorScreen from "./RightMonitorScreen.js";
 import RubiksCube from "./RubiksCube.js";
-import Skybox from "./Skybox.js";
 import Confetti from "./Confetti.js";
 import AudioManager from "./AudioManager.js";
 
@@ -29,12 +26,9 @@ export default class World extends EventEmitter {
         this.setBaked();
 
         this.setWhiteboard();
-        this.setCarpet();
-        this.setArcadeScreen();
         this.setTopChair();
 
         this.setLeftMonitorScreen();
-        this.setRightMonitorScreen();
         this.setSkybox();
         this.setConfetti();
         this.setCoffeeSteam();
@@ -74,20 +68,8 @@ export default class World extends EventEmitter {
     this.whiteboard = new Whiteboard();
   }
 
-  setCarpet() {
-    this.carpet = new Carpet();
-  }
-
-  setArcadeScreen() {
-    this.arcadeScreen = new ArcadeScreen();
-  }
-
   setLeftMonitorScreen() {
     this.leftMonitorScreen = new LeftMonitorScreen();
-  }
-
-  setRightMonitorScreen() {
-    this.rightMonitorScreen = new RightMonitorScreen();
   }
   setAudioManager() {
     this.audioManager = new AudioManager();
@@ -101,7 +83,6 @@ export default class World extends EventEmitter {
     if (this.rubiksCube) this.rubiksCube.update();
     if (this.skybox) this.skybox.update();
     if (this.leftMonitorScreen) this.leftMonitorScreen.update();
-    if (this.rightMonitorScreen) this.rightMonitorScreen.update();
     if (this.confetti) this.confetti.update();
     if (this.whiteboard) this.whiteboard.update();
   }

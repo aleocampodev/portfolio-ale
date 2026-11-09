@@ -112,9 +112,7 @@ export default class LeftMonitorScreen {
   }
 
   receiveMessage = (event) => {
-    if (event.data == "Projects") {
-      this.navigation.flyToPosition("rightMonitor");
-    } else if (event.data == "mousedown") {
+    if (event.data == "mousedown") {
       this.audioManager.playSingleAudio("mouseclick", 1);
     } else if (event.data == "mouseup") {
       this.audioManager.playSingleAudio("mouserelease", 1);

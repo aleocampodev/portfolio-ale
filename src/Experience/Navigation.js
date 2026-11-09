@@ -8,18 +8,12 @@ import {
   CAMERA_POSITION,
   CAMERA_QUATERNION,
   CAMERA_TARGET,
-  ARCADE_MACHINE_CAMERA_POSITION,
-  ARCADE_MACHINE_CAMERA_QUATERNION,
-  ARCADE_MACHINE_CAMERA_TARGET,
   LEFT_MONITOR_CAMERA_POSITION,
   LEFT_MONITOR_CAMERA_QUATERNION,
   LEFT_MONITOR_CAMERA_TARGET,
-  RIGHT_MONITOR_CAMERA_TARGET,
-  RIGHT_MONITOR_CAMERA_POSITION,
   WHITEBOARD_CAMERA_POSITION,
   WHITEBOARD_CAMERA_QUATERNION,
   WHITEBOARD_CAMERA_TARGET,
-  RIGHT_MONITOR_CAMERA_QUATERNION,
   RUBIK_TARGET,
   LINKEDIN_URL,
   GITHUB_URL,
@@ -143,16 +137,8 @@ export default class Navigation {
     this.orbitControls.enabled = false;
     this.expandScene(this.experience.scene, this.sceneResult);
     this.expandScene(
-      this.experience.cssArcadeMachineScene,
-      this.cssArcadeMachineSceneResult
-    );
-    this.expandScene(
       this.experience.cssLeftMonitorScene,
       this.cssLeftMonitorSceneResult
-    );
-    this.expandScene(
-      this.experience.cssRightMonitorScene,
-      this.cssRightMonitorSceneResult
     );
     this.changeTarget(CAMERA_TARGET.x, CAMERA_TARGET.y, CAMERA_TARGET.z, 1);
     this.backButton.classList.remove("show-back-button");
@@ -256,33 +242,6 @@ export default class Navigation {
       this.deactivateActivityControls();
     }
     switch (key) {
-      case "arcadeMachine":
-        audioManager.playSingleAudio("whoosh", 0.2);
-        this.backButton.classList.add("show-back-button");
-        this.orbitControls.enableDamping = false;
-        this.orbitControls.enabled = false;
-        this.moveCamera(
-          ARCADE_MACHINE_CAMERA_POSITION.x,
-          ARCADE_MACHINE_CAMERA_POSITION.y,
-          ARCADE_MACHINE_CAMERA_POSITION.z,
-          1
-        );
-        this.rotateCamera(
-          ARCADE_MACHINE_CAMERA_QUATERNION.x,
-          ARCADE_MACHINE_CAMERA_QUATERNION.y,
-          ARCADE_MACHINE_CAMERA_QUATERNION.z,
-          ARCADE_MACHINE_CAMERA_QUATERNION.w,
-          1.15,
-          key
-        );
-        this.changeTarget(
-          ARCADE_MACHINE_CAMERA_TARGET.x,
-          ARCADE_MACHINE_CAMERA_TARGET.y,
-          ARCADE_MACHINE_CAMERA_TARGET.z,
-          1
-        );
-        this.clickOnActivity();
-        break;
       case "leftMonitor":
         audioManager.playSingleAudio("whoosh", 0.2);
         this.backButton.classList.add("show-back-button");
@@ -306,34 +265,6 @@ export default class Navigation {
           LEFT_MONITOR_CAMERA_TARGET.x,
           LEFT_MONITOR_CAMERA_TARGET.y,
           LEFT_MONITOR_CAMERA_TARGET.z,
-          1
-        );
-        this.clickOnActivity();
-        break;
-      case "rightMonitor":
-        audioManager.playSingleAudio("whoosh", 0.2);
-        this.backButton.classList.add("show-back-button");
-        this.orbitControls.enableDamping = false;
-        this.orbitControls.enabled = false;
-
-        this.moveCamera(
-          RIGHT_MONITOR_CAMERA_POSITION.x,
-          RIGHT_MONITOR_CAMERA_POSITION.y,
-          RIGHT_MONITOR_CAMERA_POSITION.z,
-          1
-        );
-        this.rotateCamera(
-          RIGHT_MONITOR_CAMERA_QUATERNION.x,
-          RIGHT_MONITOR_CAMERA_QUATERNION.y,
-          RIGHT_MONITOR_CAMERA_QUATERNION.z,
-          RIGHT_MONITOR_CAMERA_QUATERNION.w,
-          1.15,
-          key
-        );
-        this.changeTarget(
-          RIGHT_MONITOR_CAMERA_TARGET.x,
-          RIGHT_MONITOR_CAMERA_TARGET.y,
-          RIGHT_MONITOR_CAMERA_TARGET.z,
           1
         );
         this.clickOnActivity();
@@ -374,14 +305,8 @@ export default class Navigation {
         this.orbitControls.enabled = false;
         this.experience.world.rubiksCube.reubicateCube();
         this.sceneResult = this.shrinkScene(this.experience.scene);
-        this.cssArcadeMachineSceneResult = this.shrinkScene(
-          this.experience.cssArcadeMachineScene
-        );
         this.cssLeftMonitorSceneResult = this.shrinkScene(
           this.experience.cssLeftMonitorScene
-        );
-        this.cssRightMonitorSceneResult = this.shrinkScene(
-          this.experience.cssRightMonitorScene
         );
         this.moveCamera(
           CAMERA_POSITION.x,
@@ -566,17 +491,11 @@ export default class Navigation {
 
   deactivateActivityControls = () => {
     switch (this.currentStage) {
-      case "arcadeMachine":
-        this.experience.world.arcadeScreen.deactivateControls();
-        break;
       case "whiteboard":
         this.experience.world.whiteboard.deactivateControls();
         break;
       case "leftMonitor":
         this.experience.world.leftMonitorScreen.deactivateControls();
-        break;
-      case "rightMonitor":
-        this.experience.world.rightMonitorScreen.deactivateControls();
         break;
       case "rubikGroup":
         this.experience.world.rubiksCube.deactivateControls();
@@ -607,17 +526,11 @@ export default class Navigation {
 
   updateStage() {
     switch (this.currentStage) {
-      case "arcadeMachine":
-        this.experience.world.arcadeScreen.activateControls();
-        break;
       case "whiteboard":
         this.experience.world.whiteboard.activateControls();
         break;
       case "leftMonitor":
         this.experience.world.leftMonitorScreen.activateControls();
-        break;
-      case "rightMonitor":
-        this.experience.world.rightMonitorScreen.activateControls();
         break;
       case "rubikGroup":
         this.experience.world.rubiksCube.activateControls();

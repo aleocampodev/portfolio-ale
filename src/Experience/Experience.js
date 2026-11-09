@@ -22,9 +22,7 @@ export default class Experience {
 
     // Options
     this.webglElement = _options.webglElement;
-    this.cssArcadeMachine = _options.cssArcadeMachine;
     this.cssLeftMonitor = _options.cssLeftMonitor;
-    this.cssRightMonitor = _options.cssRightMonitor;
 
     if (!this.webglElement) {
       console.warn("Missing 'webglElement' property");
@@ -67,9 +65,7 @@ export default class Experience {
 
   setScene() {
     this.scene = new Scene();
-    this.cssArcadeMachineScene = new Scene();
     this.cssLeftMonitorScene = new Scene();
-    this.cssRightMonitorScene = new Scene();
   }
 
   setCamera() {

@@ -20,17 +20,7 @@ body {
   pointer-events: auto;
 }
 
-#cssArcadeMachine {
-  pointer-events: none;
-  cursor: pointer;
-}
-
 #cssLeftMonitor {
-  pointer-events: none;
-  cursor: pointer;
-}
-
-#cssRightMonitor {
   pointer-events: none;
   cursor: pointer;
 }

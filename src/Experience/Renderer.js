@@ -1,5 +1,6 @@
 import {
   Color,
+  HalfFloatType,
   WebGLRenderer,
   Vector2,
   WebGLRenderTarget,
@@ -12,6 +13,7 @@ import { CSS3DRenderer } from "three/examples/jsm/renderers/CSS3DRenderer.js";
 import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { SMAAPass } from "three/examples/jsm/postprocessing/SMAAPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader.js";
 
 export default class Renderer {
@@ -87,6 +89,9 @@ export default class Renderer {
         generateMipmaps: false,
         minFilter: LinearFilter,
         magFilter: LinearFilter,
+        // HDR: las tiras LED emiten por encima de 1.0 y el bloom selectivo
+        // (threshold 1.0) solo debe capturarlas a ellas, no al bake.
+        type: HalfFloatType,
         colorSpace: "srgb",
       }
     );
@@ -99,8 +104,15 @@ export default class Renderer {
     this.postProcess.composer.setSize(this.config.width, this.config.height);
     this.postProcess.composer.setPixelRatio(this.config.pixelRatio);
     this.gammaCorrectionShader = new ShaderPass(GammaCorrectionShader);
+    this.postProcess.bloomPass = new UnrealBloomPass(
+      new Vector2(this.config.width, this.config.height),
+      0.55, // strength
+      0.45, // radius
+      1.0 // threshold: solo lo que supera 1.0 en lineal (las tiras)
+    );
     this.postProcess.composer.addPass(this.postProcess.renderPass);
     this.postProcess.composer.addPass(this.postProcess.outlinePass);
+    this.postProcess.composer.addPass(this.postProcess.bloomPass);
     this.postProcess.composer.addPass(this.gammaCorrectionShader);
     if (this.instance.capabilities.isWebGL2) {
       const smaaPass = new SMAAPass();

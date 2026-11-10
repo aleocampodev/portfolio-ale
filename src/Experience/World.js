@@ -9,6 +9,7 @@ import LeftMonitorScreen from "./LeftMonitorScreen.js";
 import RubiksCube from "./RubiksCube.js";
 import Confetti from "./Confetti.js";
 import AudioManager from "./AudioManager.js";
+import LedStrips from "./LedStrips.js";
 
 import { RUBIK_POSITION, RUBIK_SCALE } from "./constants.js";
 
@@ -25,6 +26,7 @@ export default class World extends EventEmitter {
         this.setAudioManager();
         this.setBaked();
 
+        this.setLedStrips();
         this.setWhiteboard();
         this.setTopChair();
 
@@ -42,6 +44,10 @@ export default class World extends EventEmitter {
 
   setBaked() {
     this.baked = new Baked();
+  }
+
+  setLedStrips() {
+    this.ledStrips = new LedStrips();
   }
 
   setRubiksCube() {

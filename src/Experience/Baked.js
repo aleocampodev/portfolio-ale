@@ -147,25 +147,19 @@ export default class Baked {
     const plate = this.model.room3 && this.model.room3.getObjectByName("Itchio");
     if (!plate) return;
 
-    // Sacar la chapa del modelo horneado sin moverla de sitio.
-    this.scene.updateMatrixWorld(true);
-    const world = plate.matrixWorld.clone();
-    plate.removeFromParent();
-    world.decompose(plate.position, plate.quaternion, plate.scale);
-
-    plate.geometry.setAttribute("uv", this.getPlateUvs(plate.geometry));
+    // La chapa y el logo 3D de X ya vienen modelados e integrados en room3.glb
+    // con su placa base blanca/clara y el logo extruido en 3D con volumen idéntico a LinkedIn.
+    // Mantenemos su material horneado para que el fondo y las sombras de luz coincidan al 100%,
+    // y nombramos el objeto y su grupo 'x' para que la navegación por click funcione directamente.
     plate.name = "x";
-    plate.material = new MeshBasicMaterial({
-      map: this.createLogoXTexture(),
-    });
+    plate.material = this.model.material3;
 
-    // La navegacion detecta los logos por el nombre del grupo padre, igual que
-    // linkedin y github, asi que la chapa va dentro de un grupo "x".
     const group = new Group();
     group.name = "x";
-    group.add(plate);
+    group.position.copy(plate.position);
+    group.quaternion.copy(plate.quaternion);
+    group.scale.copy(plate.scale);
     this.scene.add(group);
-
     this.model.x = group;
   };
 

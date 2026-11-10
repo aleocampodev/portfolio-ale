@@ -106,9 +106,9 @@ export default class Renderer {
     this.gammaCorrectionShader = new ShaderPass(GammaCorrectionShader);
     this.postProcess.bloomPass = new UnrealBloomPass(
       new Vector2(this.config.width, this.config.height),
-      0.25, // strength
+      0.7, // strength
       0.45, // radius
-      1.25 // threshold: solo la tira (>1.39 en lineal), no el blanco del bake
+      1.05 // threshold: solo la tira (muy por encima de 1.0), no el blanco del bake
     );
     this.postProcess.composer.addPass(this.postProcess.renderPass);
     this.postProcess.composer.addPass(this.postProcess.outlinePass);

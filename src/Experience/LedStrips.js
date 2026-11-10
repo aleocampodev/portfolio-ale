@@ -27,9 +27,9 @@ import Experience from "./Experience.js";
 // Cada segmento se define por dos puntos y una normal de la superficie sobre la
 // que se pega.
 
-const CORE_COLOR = new Color(1.0, 0.56, 0.26);
-const CORE_HDR_GAIN = 3.2;
-const GLOW_COLOR = new Color(1.0, 0.6, 0.3);
+const CORE_COLOR = new Color(1.0, 0.5, 0.2);
+const CORE_HDR_GAIN = 9.0;
+const GLOW_COLOR = new Color(1.0, 0.5, 0.22);
 const LED_GAP = 0.008;
 
 // El zocalo sobresale de la pared: la tira debe quedar por delante de su cara,
@@ -37,20 +37,20 @@ const LED_GAP = 0.008;
 const SKIRTING_GAP = 0.012;
 
 // Nucleo: una linea fina, no una banda.
-const CORE_THICKNESS = 0.012;
+const CORE_THICKNESS = 0.034;
 
 // Halo sobre la pared: corto y debil, para que el zocalo no se lea encendido.
-const WALL_GLOW_HEIGHT = 0.22;
-const WALL_GLOW_OPACITY = 0.18;
+const WALL_GLOW_HEIGHT = 0.45;
+const WALL_GLOW_OPACITY = 0.26;
 
 // Micro-halo hacia abajo: funde la tira con el canto del zocalo y evita que
 // quede un corte seco entre la linea y el mueble.
-const LIP_GLOW_HEIGHT = 0.035;
-const LIP_GLOW_OPACITY = 0.14;
+const LIP_GLOW_HEIGHT = 0.13;
+const LIP_GLOW_OPACITY = 0.3;
 
 // Halo sobre el piso: debil, solo para conservar el rebote.
-const FLOOR_GLOW_WIDTH = 0.4;
-const FLOOR_GLOW_OPACITY = 0.2;
+const FLOOR_GLOW_WIDTH = 0.7;
+const FLOOR_GLOW_OPACITY = 0.45;
 const FLOOR_GLOW_Y = 0.02;
 
 // Medidas del modelo cargado (room1).

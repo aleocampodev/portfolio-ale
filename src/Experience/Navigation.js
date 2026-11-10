@@ -370,6 +370,7 @@ export default class Navigation {
         window.open(GITHUB_URL);
         break;
       case "itchio":
+      case "x":
         window.open(ITCHIO_URL);
         break;
     }

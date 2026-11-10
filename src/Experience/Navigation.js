@@ -430,6 +430,9 @@ export default class Navigation {
   }
 
   expandScene(scene, result) {
+    // Si el cubo se resuelve sin haber pasado por el modo cubo, no hay estado
+    // guardado (result) y no hay nada que restaurar.
+    if (!result) return;
     scene.children.forEach((child, i) => {
       if (
         child.type != "PerspectiveCamera" &&
@@ -438,7 +441,7 @@ export default class Navigation {
         child.type != "AmbientLight" &&
         child.name != "rubikPivot"
       ) {
-        if (result.originalPos[i] !== null) {
+        if (result.originalPos[i]) {
           gsap.to(child.position, {
             x: result.originalPos[i].x,
             y: result.originalPos[i].y,
@@ -451,7 +454,7 @@ export default class Navigation {
             },
           });
         }
-        if (result.originalScale[i] !== null) {
+        if (result.originalScale[i]) {
           gsap.to(child.scale, {
             x: result.originalScale[i].x,
             y: result.originalScale[i].y,

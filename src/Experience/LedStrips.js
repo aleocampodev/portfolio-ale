@@ -28,24 +28,29 @@ import Experience from "./Experience.js";
 // que se pega.
 
 const CORE_COLOR = new Color(1.0, 0.56, 0.26);
-const CORE_HDR_GAIN = 2.2;
+const CORE_HDR_GAIN = 3.2;
 const GLOW_COLOR = new Color(1.0, 0.6, 0.3);
 const LED_GAP = 0.008;
 
 // El zocalo sobresale de la pared: la tira debe quedar por delante de su cara,
 // si no la geometria la oculta y solo se ve el halo.
-const SKIRTING_GAP = 0.04;
+const SKIRTING_GAP = 0.012;
 
 // Nucleo: una linea fina, no una banda.
-const CORE_THICKNESS = 0.022;
+const CORE_THICKNESS = 0.012;
 
 // Halo sobre la pared: corto y debil, para que el zocalo no se lea encendido.
-const WALL_GLOW_HEIGHT = 0.06;
-const WALL_GLOW_OPACITY = 0.1;
+const WALL_GLOW_HEIGHT = 0.22;
+const WALL_GLOW_OPACITY = 0.18;
 
-// Halo sobre el piso: ancho y calido, es el que da la sensacion de alumbrado.
-const FLOOR_GLOW_WIDTH = 0.95;
-const FLOOR_GLOW_OPACITY = 0.8;
+// Micro-halo hacia abajo: funde la tira con el canto del zocalo y evita que
+// quede un corte seco entre la linea y el mueble.
+const LIP_GLOW_HEIGHT = 0.035;
+const LIP_GLOW_OPACITY = 0.14;
+
+// Halo sobre el piso: debil, solo para conservar el rebote.
+const FLOOR_GLOW_WIDTH = 0.4;
+const FLOOR_GLOW_OPACITY = 0.2;
 const FLOOR_GLOW_Y = 0.02;
 
 // Medidas del modelo cargado (room1).
@@ -54,8 +59,9 @@ const WALL_Z = -4.66; // pared del fondo, cara interior (normal +z)
 const ROOM_MIN_X = -5.07;
 const ROOM_MAX_Z = 4.4;
 
-// La tira va en la junta piso-pared, por debajo del zocalo.
-const LED_Y = 0.035;
+// La tira va justo encima del zocalo (que termina en 0.249), no en la junta
+// con el piso: asi el zocalo no se lee encendido y la luz sube por la pared.
+const LED_Y = 0.258;
 
 const SEGMENTS = [
   {
@@ -64,6 +70,7 @@ const SEGMENTS = [
     b: [WALL_X, LED_Y, WALL_Z],
     normal: [0, 0, 1],
     floorGlow: true,
+    lipGlow: true,
     gap: SKIRTING_GAP,
   },
   {
@@ -72,6 +79,7 @@ const SEGMENTS = [
     b: [WALL_X, LED_Y, ROOM_MAX_Z],
     normal: [-1, 0, 0],
     floorGlow: true,
+    lipGlow: true,
     gap: SKIRTING_GAP,
   },
   {
@@ -196,6 +204,24 @@ export default class LedStrips {
       wallGlow.renderOrder = 2;
 
       this.group.add(core, wallGlow);
+
+      if (segment.lipGlow) {
+        const lip = new Mesh(
+          this.glowGeometry,
+          this.createGlowMaterial(LIP_GLOW_OPACITY, this.wallGlowTexture)
+        );
+        lip.name = `led-lipglow-${segment.name}`;
+        lip.matrixAutoUpdate = false;
+        lip.matrix
+          .copy(basis)
+          .scale(new Vector3(length, -LIP_GLOW_HEIGHT, 1))
+          .setPosition(
+            origin.clone().addScaledVector(up, -LIP_GLOW_HEIGHT / 2)
+          );
+        lip.renderOrder = 2;
+
+        this.group.add(lip);
+      }
 
       // Halo ancho sobre el piso: acostado, arranca en la pared y se apaga
       // hacia el centro del cuarto.

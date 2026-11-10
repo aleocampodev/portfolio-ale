@@ -65,7 +65,7 @@ export default class Whiteboard {
   }
 
   setWhiteboard() {
-    this.whiteboardMaterial = new MeshBasicMaterial();
+    this.whiteboardMaterial = new MeshBasicMaterial({ color: 0xe8e8e8 });
     const whiteboardGeom = new PlaneGeometry(2.6, 1.82);
     whiteboardGeom.computeBoundingBox();
     whiteboardGeom.computeVertexNormals();

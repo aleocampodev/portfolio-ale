@@ -69,7 +69,7 @@ export default class Baked {
     // El zocalo de la pared derecha es una tira 3D propia (Material_Socalo) cuya
     // zona del atlas esta horneada en negro por la sombra del arcade. Como es una
     // tira simple, se pinta con un blanco plano: uniforme de esquina a esquina.
-    const skirtingMaterial = new MeshBasicMaterial({ color: 0xf6f5f1 });
+    const skirtingMaterial = new MeshBasicMaterial({ color: 0xe3d9ce });
 
     this.model.room1.traverse((child) => {
       if (child.isMesh) {

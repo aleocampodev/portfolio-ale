@@ -178,6 +178,9 @@ for p in me.polygons:
         "p": [round(wc.x, 4), round(wc.y, 4), round(wc.z, 4)],
         "n": [round(wn.x, 4), round(wn.y, 4), round(wn.z, 4)],
         "a": round(world_area(p), 6),
+        # Posicion de mundo por vertice (mismo orden que las UV): imprescindible
+        # para generar el ruido de pared en espacio de mundo y evitar costuras.
+        "w": [[round(v, 6) for v in (mw @ me.vertices[vi].co)] for vi in p.vertices],
     })
 
 comp_info = {}
@@ -260,6 +263,193 @@ def luma_of(linear_rgb):
         + 0.7152 * linear_rgb[..., 1]
         + 0.0722 * linear_rgb[..., 2]
     )
+
+
+# ---------------------------------------------------------------------------
+# Textura de pared (yeso/pintura) generada en ESPACIO DE MUNDO
+# ---------------------------------------------------------------------------
+#
+# Las dos paredes son islas UV distintas y perpendiculares: un ruido en UV
+# quedaria cortado en la esquina. Aqui el ruido es una funcion 3D de la posicion
+# de mundo de cada texel, asi que el valor en la esquina coincide por ambos lados
+# y no hay costura.
+#
+# El ruido NO reemplaza nada: multiplica (1 + campo) la luma ya tintada. El AO y
+# las sombras horneadas siguen intactos; el campo tiene media 0 (multiplicador
+# medio = 1.0), de modo que el color medio no se desplaza.
+
+WALL_TEXTURE_DEFAULTS = {
+    # (escala en metros, peso relativo, semilla)
+    "octaves": ((1.4, 0.30, 11), (0.7, 0.40, 23), (0.35, 0.50, 37)),
+    "grain_scale": 0.015,  # grano fino: 1.5 cm
+    "grain_weight": 0.35,
+    "sigma": 0.030,        # desviacion tipica del multiplicador (~+-6 % a 2 sigma)
+    "max_amp": 0.065,      # tope duro +-6.5 %
+    "gradient": 0.02,      # gradiente vertical +-2 %
+    "seed": 7,
+}
+
+
+def _hash3(ix, iy, iz, seed):
+    n = (
+        ix * np.int64(374761393)
+        + iy * np.int64(668265263)
+        + iz * np.int64(1274126177)
+        + np.int64(seed) * np.int64(1013904223)
+    )
+    n = (n ^ (n >> np.int64(13))) * np.int64(1274126177)
+    n = n ^ (n >> np.int64(16))
+    return (n & np.int64(0x7FFFFFFF)).astype(np.float64) / 2147483647.0
+
+
+def value_noise3(x, y, z, scale, seed):
+    """Value noise 3D trilineal en [0,1]. Determinista."""
+    px = np.asarray(x, dtype=np.float64) / scale
+    py = np.asarray(y, dtype=np.float64) / scale
+    pz = np.asarray(z, dtype=np.float64) / scale
+    ix = np.floor(px)
+    iy = np.floor(py)
+    iz = np.floor(pz)
+    fx = px - ix
+    fy = py - iy
+    fz = pz - iz
+    ux = fx * fx * (3.0 - 2.0 * fx)
+    uy = fy * fy * (3.0 - 2.0 * fy)
+    uz = fz * fz * (3.0 - 2.0 * fz)
+    ix = ix.astype(np.int64)
+    iy = iy.astype(np.int64)
+    iz = iz.astype(np.int64)
+    c000 = _hash3(ix, iy, iz, seed)
+    c100 = _hash3(ix + 1, iy, iz, seed)
+    c010 = _hash3(ix, iy + 1, iz, seed)
+    c110 = _hash3(ix + 1, iy + 1, iz, seed)
+    c001 = _hash3(ix, iy, iz + 1, seed)
+    c101 = _hash3(ix + 1, iy, iz + 1, seed)
+    c011 = _hash3(ix, iy + 1, iz + 1, seed)
+    c111 = _hash3(ix + 1, iy + 1, iz + 1, seed)
+    x00 = c000 + (c100 - c000) * ux
+    x10 = c010 + (c110 - c010) * ux
+    x01 = c001 + (c101 - c001) * ux
+    x11 = c011 + (c111 - c011) * ux
+    y0 = x00 + (x10 - x00) * uy
+    y1 = x01 + (x11 - x01) * uy
+    return y0 + (y1 - y0) * uz
+
+
+def raw_wall_noise(x, y, z, cfg):
+    """Campo bruto (media ~0, sin normalizar) sumando octavas + grano."""
+    acc = np.zeros_like(x, dtype=np.float64)
+    for scale, weight, seed in cfg["octaves"]:
+        acc += weight * (value_noise3(x, y, z, scale, seed) * 2.0 - 1.0)
+    acc += cfg["grain_weight"] * (
+        value_noise3(x, y, z, cfg["grain_scale"], cfg["seed"]) * 2.0 - 1.0
+    )
+    return acc
+
+
+def affine_world_from_uv(uv, world):
+    """mundo = A*u + B*v + C. Exacto para caras planas (paredes)."""
+    m = np.array([[p[0], p[1], 1.0] for p in uv], dtype=np.float64)
+    w = np.array(world, dtype=np.float64)
+    coef, _res, _rank, _sv = np.linalg.lstsq(m, w, rcond=None)
+    resid = float(np.max(np.abs(m @ coef - w))) if len(uv) else 0.0
+    return coef, resid
+
+
+def build_wall_field(faces, wall_ids, size, cfg, chunk=256):
+    """Devuelve (campo, cubierto, info): multiplicador 1+campo por texel de pared.
+
+    `campo` es zero-mean sobre los texeles cubiertos y esta limitado a +-max_amp.
+    """
+    field = np.zeros((size, size), dtype=np.float32)
+    zmap = np.zeros((size, size), dtype=np.float32)
+    covered = np.zeros((size, size), dtype=bool)
+    info = {"faces_used": 0, "faces_skipped": 0, "max_planarity_residual_m": 0.0}
+
+    for f in faces:
+        if f["c"] not in wall_ids:
+            continue
+        uv = f["uv"]
+        world = f.get("w")
+        if not world or len(uv) < 3 or has_duplicate_uvs(uv):
+            info["faces_skipped"] += 1
+            continue
+        coef, resid = affine_world_from_uv(uv, world)
+        info["max_planarity_residual_m"] = max(info["max_planarity_residual_m"], resid)
+
+        img = Image.new("L", (size, size), 0)
+        draw = ImageDraw.Draw(img)
+        for tri in triangulate(uv):
+            pts = [(p[0] * size, (1.0 - p[1]) * size) for p in tri]
+            if poly_area2(pts) < 0.75:
+                continue
+            draw.polygon(pts, fill=255)
+        bbox = img.getbbox()
+        if not bbox:
+            continue
+        bx0, by0, bx1, by1 = bbox
+        info["faces_used"] += 1
+
+        for y0 in range(by0, by1, chunk):
+            y1 = min(by1, y0 + chunk)
+            sub = np.asarray(img.crop((bx0, y0, bx1, y1))) > 127
+            if not sub.any():
+                continue
+            xs = (np.arange(bx0, bx1) + 0.5) / size
+            ys = (np.arange(y0, y1) + 0.5) / size
+            uu, vv = np.meshgrid(xs, 1.0 - ys)
+            wx = coef[0, 0] * uu + coef[1, 0] * vv + coef[2, 0]
+            wy = coef[0, 1] * uu + coef[1, 1] * vv + coef[2, 1]
+            wz = coef[0, 2] * uu + coef[1, 2] * vv + coef[2, 2]
+            raw = raw_wall_noise(wx, wy, wz, cfg)
+            field[y0:y1, bx0:bx1][sub] = raw[sub].astype(np.float32)
+            zmap[y0:y1, bx0:bx1][sub] = wz[sub].astype(np.float32)
+            covered[y0:y1, bx0:bx1] |= sub
+
+    n = int(covered.sum())
+    if n == 0:
+        return field, covered, info
+
+    vals = field[covered].astype(np.float64)
+    vals = vals - vals.mean()
+    std = vals.std()
+    info["raw_std"] = float(std)
+    if std > 1e-9:
+        vals = vals / std
+
+    # Gradiente vertical muy leve (+-gradient), relativo a la altura de la pared.
+    zs = zmap[covered].astype(np.float64)
+    zspan = float(zs.max() - zs.min())
+    if cfg["gradient"] > 0.0 and zspan > 1e-6:
+        zn = (zs - zs.min()) / zspan - 0.5
+    else:
+        zn = np.zeros_like(zs)
+    vals = vals * cfg["sigma"] + cfg["gradient"] * zn
+
+    # Media 0 exacta (multiplicador medio 1.0) y tope de amplitud.
+    vals = vals - vals.mean()
+    vals = np.clip(vals, -cfg["max_amp"], cfg["max_amp"])
+
+    field[covered] = vals.astype(np.float32)
+    info.update(
+        covered_px=n,
+        mean=float(vals.mean()),
+        std=float(vals.std()),
+        min=float(vals.min()),
+        max=float(vals.max()),
+        amp_p2_5=float(np.percentile(vals, 2.5)),
+        amp_p97_5=float(np.percentile(vals, 97.5)),
+        z_span_m=round(zspan, 3),
+    )
+    info["config"] = {
+        "octaves": [list(o) for o in cfg["octaves"]],
+        "grain_scale_m": cfg["grain_scale"],
+        "grain_weight": cfg["grain_weight"],
+        "sigma": cfg["sigma"],
+        "max_amp": cfg["max_amp"],
+        "gradient": cfg["gradient"],
+    }
+    return field, covered, info
 
 
 # ---------------------------------------------------------------------------
@@ -503,6 +693,22 @@ def main(argv=None):
              "(ratio' = lift + (1-lift)*ratio). 0 = sin lift.",
     )
     ap.add_argument("--force", action="store_true", help="ignora la guardia de idempotencia")
+    ap.add_argument(
+        "--wall-texture",
+        dest="wall_texture",
+        action="store_true",
+        default=True,
+        help="anade ruido de yeso/pintura (espacio de mundo) dentro de las paredes",
+    )
+    ap.add_argument("--no-wall-texture", dest="wall_texture", action="store_false")
+    ap.add_argument("--wall-noise-sigma", type=float, default=WALL_TEXTURE_DEFAULTS["sigma"])
+    ap.add_argument("--wall-gradient", type=float, default=WALL_TEXTURE_DEFAULTS["gradient"])
+    ap.add_argument("--wall-grain-scale", type=float, default=WALL_TEXTURE_DEFAULTS["grain_scale"])
+    ap.add_argument(
+        "--expect-walls",
+        default=None,
+        help="comps esperados en el grupo paredes, separados por comas (falla si no coincide)",
+    )
     ap.add_argument("--report", default=None, help="ruta del JSON de diagnostico")
     ap.add_argument("--dump-masks", default=None, help="directorio donde guardar las mascaras (auditoria)")
     ap.add_argument("--allow-missing-groups", action="store_true", help="no fallar si falta un grupo")
@@ -536,7 +742,24 @@ def main(argv=None):
     print("      paredes: %d piezas | puff: %d piezas | cojines: %d piezas"
           % (len(groups["walls"]), len(groups["puff"]), len(groups["cushions"])))
 
+    if args.expect_walls:
+        expected = {int(v) for v in args.expect_walls.split(",") if v.strip()}
+        if set(groups["walls"]) != expected:
+            sys.exit(
+                "ERROR: el grupo paredes no coincide con lo esperado.\n"
+                "       esperado: %s\n       obtenido: %s"
+                % (sorted(expected), sorted(groups["walls"]))
+            )
+        print("      paredes OK: exactamente %s" % sorted(expected))
+
     faces = payload["faces"]
+
+    # Config del ruido de pared (se puede ajustar por CLI).
+    wcfg = dict(WALL_TEXTURE_DEFAULTS)
+    wcfg["sigma"] = args.wall_noise_sigma
+    wcfg["gradient"] = args.wall_gradient
+    wcfg["grain_scale"] = args.wall_grain_scale
+    wall_texture_info = {}
 
     print("[4/5] Rasterizando mascaras a %d^2..." % args.size)
     masks_dilated = {}
@@ -646,6 +869,17 @@ def main(argv=None):
         scaled = tint_lin[None, :] * ratio[:, None]
         out_lin[mask] = np.clip(scaled, 0.0, 1.0)
 
+        # Ruido de yeso/pintura SOLO dentro de la isla de paredes y SOLO sobre la
+        # luma ya tintada: multiplica (1 + campo). No toca AO ni sombras.
+        if name == "walls" and args.wall_texture:
+            field, covered, winfo = build_wall_field(faces, groups["walls"], args.size, wcfg)
+            out_lin[covered] *= (1.0 + field[covered])[:, None]
+            np.clip(out_lin[covered], 0.0, 1.0, out=out_lin[covered])
+            wall_texture_info = winfo
+            print("      pared: ruido sigma=%.4f min=%.4f max=%.4f std=%.4f (%d px)"
+                  % (wcfg["sigma"], winfo.get("min", 0), winfo.get("max", 0),
+                     winfo.get("std", 0), winfo.get("covered_px", 0)))
+
         # Estadisticas sobre las islas reales (sin el anillo de dilatacion, que
         # cae sobre relleno negro y falsearia medianas y medias).
         stat = masks_own[name]
@@ -684,6 +918,68 @@ def main(argv=None):
     for m in masks_dilated.values():
         union |= m
     untouched_delta = np.abs(src_rgb[~union] - linear_to_srgb(out_lin[~union]) * 255.0)
+
+    out_rgb_full = linear_to_srgb(out_lin) * 255.0
+
+    def mask_delta(m):
+        if m is None or not m.any():
+            return None
+        d = np.abs(out_rgb_full[m] - src_rgb[m])
+        return {
+            "px": int(m.sum()),
+            "max_delta_255": int(np.ceil(d.max())),
+            "mean_delta_255": round(float(d.mean()), 4),
+        }
+
+    # --- Intocables --------------------------------------------------------
+    # (a) todo BAKED_1 que no sea pared/puff/cojin (suelo, props, etc.)
+    grouped = set(groups["walls"]) | set(groups["puff"]) | set(groups["cushions"])
+    prot_faces = [f for f in faces if f["c"] not in grouped]
+    prot_img, _ = rasterize_faces(prot_faces, args.size)
+    prot = np.asarray(prot_img) > 127
+
+    # (b) la pizarra es un objeto aparte que en la web usa ESTE mismo atlas
+    #     (Whiteboard.js -> baked.model.material), asi que hay que comprobarla.
+    wb_mask = None
+    try:
+        wb_payload = extract_mesh_data(blend, "Whiteboard")
+        wb_img, _ = rasterize_faces(wb_payload["faces"], args.size)
+        wb_mask = np.asarray(wb_img) > 127
+    except SystemExit:
+        print("      aviso: no se pudo leer el objeto Whiteboard; se omite su auditoria")
+
+    prot_union = prot | wb_mask if wb_mask is not None else prot
+    wall_dilated = masks_dilated["walls"]
+    wall_own = masks_own["walls"]
+    protected = {
+        "wall_mask_overlap_px": int((wall_dilated & prot_union).sum()),
+        "wall_own_overlap_px": int((wall_own & prot_union).sum()),
+        "baked1_non_group": mask_delta(prot),
+        "whiteboard": mask_delta(wb_mask),
+        "note": "los logos LinkedIn/GitHub y los estantes usan baked3.ktx2; "
+                "la chapa X se construye en runtime: este script no los abre ni los escribe",
+    }
+
+    # --- Metricas de la textura de pared -----------------------------------
+    wall_metrics = {}
+    if args.wall_texture and wall_own.any():
+        lum_before = luma[wall_own]
+        lum_after = luma_of(out_lin)[wall_own]
+
+        def highpass_std(values_full, mask):
+            img = Image.fromarray(
+                (np.clip(values_full, 0.0, 1.0) * 255.0).astype(np.uint8), "L"
+            )
+            smooth = np.asarray(img.filter(ImageFilter.GaussianBlur(8))).astype(np.float64) / 255.0
+            return float((values_full - smooth)[mask].std())
+
+        wall_metrics = {
+            "luma_std_before": round(float(lum_before.std()), 5),
+            "luma_std_after": round(float(lum_after.std()), 5),
+            "highpass_std_before": round(highpass_std(luma, wall_own), 5),
+            "highpass_std_after": round(highpass_std(luma_of(out_lin), wall_own), 5),
+            "multiplier_mean": 1.0 + (wall_texture_info.get("mean", 0.0)),
+        }
 
     # Los pixeles no enmascarados se re-codifican desde lineal; el error de
     # ida y vuelta srgb->linear->srgb es ~0 (aritmetica float).
@@ -734,6 +1030,8 @@ def main(argv=None):
         "groups": {k: sorted(v) for k, v in groups.items()},
         "classification_log": log,
         "masks": overlap_report,
+        "wall_texture": {"enabled": bool(args.wall_texture), **wall_texture_info, **wall_metrics},
+        "protected": protected,
         "untouched_outside_masks_max_delta": int(np.ceil(untouched_delta.max())) if untouched_delta.size else 0,
         "untouched_outside_masks_mean_delta": round(float(untouched_delta.mean()), 4) if untouched_delta.size else 0.0,
         "stats": stats,

@@ -280,7 +280,7 @@ def luma_of(linear_rgb):
 
 WALL_TEXTURE_DEFAULTS = {
     # (escala en metros, peso relativo, semilla)
-    "octaves": ((1.4, 0.30, 11), (0.7, 0.40, 23), (0.35, 0.50, 37)),
+    "octaves": ((1.2, 0.30, 11), (0.7, 0.40, 23), (0.35, 0.50, 37)),
     "grain_scale": 0.015,  # grano fino: 1.5 cm
     "grain_weight": 0.35,
     "sigma": 0.030,        # desviacion tipica del multiplicador (~+-6 % a 2 sigma)

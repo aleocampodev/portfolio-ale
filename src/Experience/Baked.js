@@ -95,6 +95,10 @@ export default class Baked {
 
     this.model.room2 = this.resources.items._roomModel2.scene;
     this.bakedTexture2 = this.configureTexture(this.resources.items.baked2);
+    if (this.bakedTexture2) {
+      this.bakedTexture2.flipY = false;
+      this.bakedTexture2.needsUpdate = true;
+    }
     this.model.material2 = new MeshBasicMaterial({
       map: this.bakedTexture2,
     });
@@ -468,7 +472,9 @@ export default class Baked {
     // La luz entra por la ventana (pared +x) y cae hacia -x / -z.
     this.shadowLight = new DirectionalLight(0xffffff, 1);
     this.shadowLight.castShadow = true;
-    this.shadowLight.position.set(8, 14, -2);
+    // Luz practicamente cenital: desde 14 de altura y 8 de lado las sombras
+    // salian largas y se leian como manchas sucias sobre el piso.
+    this.shadowLight.position.set(4, 24, 4);
     this.shadowLight.target.position.set(0, 0, 0);
     this.scene.add(this.shadowLight);
     this.scene.add(this.shadowLight.target);
@@ -483,15 +489,15 @@ export default class Baked {
     shadowCamera.updateProjectionMatrix();
 
     this.shadowLight.shadow.mapSize.set(4096, 4096);
-    this.shadowLight.shadow.bias = -0.0006;
-    this.shadowLight.shadow.normalBias = 0.02;
-    this.shadowLight.shadow.radius = 1;
+    this.shadowLight.shadow.bias = -0.0004;
+    this.shadowLight.shadow.normalBias = 0.03;
+    this.shadowLight.shadow.radius = 3;
 
     if (!this.floorMesh) return;
 
     this.shadowMaterial = new ShadowMaterial({
       color: 0x000000,
-      opacity: 0.55,
+      opacity: 0.5,
       transparent: true,
       depthWrite: false,
     });

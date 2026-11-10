@@ -10,6 +10,7 @@ import RubiksCube from "./RubiksCube.js";
 import Confetti from "./Confetti.js";
 import AudioManager from "./AudioManager.js";
 import LedStrips from "./LedStrips.js";
+import ContactShadows from "./ContactShadows.js";
 
 import { RUBIK_POSITION, RUBIK_SCALE } from "./constants.js";
 
@@ -26,6 +27,7 @@ export default class World extends EventEmitter {
         this.setAudioManager();
         this.setBaked();
 
+        this.setContactShadows();
         this.setLedStrips();
         this.setWhiteboard();
         this.setTopChair();
@@ -44,6 +46,10 @@ export default class World extends EventEmitter {
 
   setBaked() {
     this.baked = new Baked();
+  }
+
+  setContactShadows() {
+    this.contactShadows = new ContactShadows();
   }
 
   setLedStrips() {

@@ -11,20 +11,30 @@ import {
  * Piso de tablones generado en tiempo de carga.
  *
  * Se dibuja una unica textura que cubre todo el suelo (sin repeticion) con:
- *  - tablones con bisel (canto iluminado + canto en sombra),
- *  - variacion de tono y veta por tabla,
+ *  - tablones anchos de cara plana (sin veta ni nudos),
+ *  - junta fina oscura con un labio claro,
+ *  - variacion de tono minima entre tablas,
+ *  - tendido girado respecto a las paredes, como en la referencia de Blender,
  *  - oclusion ambiental junto a las paredes y caida de luz general.
- * Asi el piso tiene volumen sin necesidad de luces (la sala es un bake).
  *
- * La paleta esta ajustada al tono de la web oficial (roble naranja calido).
+ * El color base sale del material `Material_Piso` de `unified_room.blend`
+ * (#D46644 lineal) ya pasado por el view transform del viewport, porque el
+ * suelo de la web va con MeshBasicMaterial y sin tone mapping: asi se ve igual
+ * que en la referencia.
  */
 
-const BASE_HUE = 20;
-const BASE_SAT = 0.38;
-const BASE_LIGHT = 0.58;
+const BASE_HUE = 14;
+const BASE_SAT = 0.45;
+const BASE_LIGHT = 0.6;
 
-const PLANK_WIDTH_M = 0.24;
-const PLANK_LENGTH_M = 2.2;
+const PLANK_WIDTH_M = 0.3;
+// Tablas largas: las juntas a tope son escasas y no rompen la lectura del
+// tendido (con tablas cortas el suelo parece un mosaico de dos direcciones).
+const PLANK_LENGTH_M = 4.2;
+
+// Giro del tendido respecto a las paredes (grados, plano del suelo).
+// 0 = tablas rectas, paralelas a la pared del fondo.
+const PLANK_ANGLE_DEG = 0;
 
 /**
  * Sombras suaves sobre el suelo. El suelo es un material sin luces, asi que las
@@ -60,74 +70,79 @@ function hsl(h, s, l) {
 // ---------------------------------------------------------------------------
 
 function drawPlank(ctx, x, y, w, h, rand) {
-  const hue = BASE_HUE + (rand() - 0.5) * 9;
-  const sat = BASE_SAT + (rand() - 0.5) * 0.09;
-  const light = BASE_LIGHT + (rand() - 0.5) * 0.07;
+  const hue = BASE_HUE + (rand() - 0.5) * 4;
+  const sat = BASE_SAT + (rand() - 0.5) * 0.05;
+  const light = BASE_LIGHT + (rand() - 0.5) * 0.035;
 
-  // Degradado transversal: canto claro arriba, tono base, canto en sombra abajo.
-  const bevel = ctx.createLinearGradient(0, y, 0, y + h);
-  bevel.addColorStop(0, hsl(hue + 2, sat * 0.9, light + 0.13));
-  bevel.addColorStop(0.07, hsl(hue, sat, light + 0.028));
-  bevel.addColorStop(0.55, hsl(hue, sat, light));
-  bevel.addColorStop(0.9, hsl(hue + 1, sat * 1.05, light - 0.055));
-  bevel.addColorStop(1, hsl(hue + 2, sat * 1.08, light - 0.13));
-  ctx.fillStyle = bevel;
+  // Cara: degradado transversal suave (la luz entra desde un lado). Da volumen
+  // a cada tabla sin que se lea como una banda.
+  const face = ctx.createLinearGradient(0, y, 0, y + h);
+  face.addColorStop(0, hsl(hue, sat, light + 0.03));
+  face.addColorStop(0.25, hsl(hue, sat, light + 0.008));
+  face.addColorStop(0.75, hsl(hue, sat, light - 0.008));
+  face.addColorStop(1, hsl(hue, sat, light - 0.018));
+  ctx.fillStyle = face;
   ctx.fillRect(x, y, w, h);
 
+  // Veta: trazos largos de contraste muy bajo, solo para romper el plano.
   ctx.save();
   ctx.beginPath();
   ctx.rect(x, y, w, h);
   ctx.clip();
-
-  // Veta: trazos ondulados de bajo contraste.
-  const grainLines = 12 + Math.floor(rand() * 7);
+  const grainLines = 9 + Math.floor(rand() * 6);
   for (let i = 0; i < grainLines; i++) {
-    const gy = y + (i + 0.5) * (h / grainLines) + (rand() - 0.5) * (h / grainLines) * 0.7;
-    const amp = h * (0.01 + rand() * 0.022);
-    const dark = rand() > 0.32;
-    const alpha = 0.028 + rand() * 0.045;
+    const gy = y + (i + 0.5) * (h / grainLines) + (rand() - 0.5) * (h / grainLines) * 0.8;
+    const alpha = 0.02 + rand() * 0.02;
+    const dark = rand() > 0.38;
     ctx.strokeStyle = dark
-      ? `rgba(92, 56, 26, ${alpha.toFixed(3)})`
-      : `rgba(255, 244, 226, ${(alpha * 0.85).toFixed(3)})`;
-    ctx.lineWidth = 0.6 + rand() * (h * 0.02);
-    ctx.beginPath();
-    const segs = 7;
+      ? `rgba(94, 50, 26, ${alpha.toFixed(3)})`
+      : `rgba(255, 240, 222, ${(alpha * 0.9).toFixed(3)})`;
+    ctx.lineWidth = 0.5 + rand() * 0.9;
+    const amp = h * (0.008 + rand() * 0.014);
     const phase = rand() * Math.PI * 2;
-    const freq = 0.8 + rand() * 1.4;
-    for (let s = 0; s <= segs; s++) {
-      const px = x - 4 + ((w + 8) * s) / segs;
-      const py = gy + Math.sin((s / segs) * Math.PI * freq + phase) * amp;
+    const freq = 0.6 + rand() * 1.1;
+    ctx.beginPath();
+    for (let s = 0; s <= 8; s++) {
+      const px = x + (w * s) / 8;
+      const py = gy + Math.sin((s / 8) * Math.PI * freq + phase) * amp;
       if (s === 0) ctx.moveTo(px, py);
       else ctx.lineTo(px, py);
     }
     ctx.stroke();
   }
-
-  // Nudo ocasional, muy sutil.
-  if (rand() < 0.025) {
-    const kx = x + w * (0.2 + rand() * 0.6);
-    const ky = y + h * (0.3 + rand() * 0.4);
-    const kr = h * (0.1 + rand() * 0.09);
-    const knot = ctx.createRadialGradient(kx, ky, 0, kx, ky, kr);
-    knot.addColorStop(0, "rgba(74, 40, 16, 0.16)");
-    knot.addColorStop(0.55, "rgba(96, 58, 30, 0.07)");
-    knot.addColorStop(1, "rgba(96, 58, 30, 0)");
-    ctx.fillStyle = knot;
-    ctx.beginPath();
-    ctx.ellipse(kx, ky, kr * 1.9, kr, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Junta: linea oscura en el pie y en las testas, brillo fino en el canto.
-  ctx.fillStyle = "rgba(52, 28, 10, 0.42)";
-  ctx.fillRect(x, y + h - Math.max(1, h * 0.055), w, Math.max(1, h * 0.055));
-  ctx.fillStyle = "rgba(52, 28, 10, 0.34)";
-  ctx.fillRect(x, y, Math.max(1.5, w * 0.005), h);
-  ctx.fillRect(x + w - Math.max(1, w * 0.004), y, Math.max(1, w * 0.004), h);
-  ctx.fillStyle = "rgba(255, 246, 228, 0.16)";
-  ctx.fillRect(x + w * 0.004, y, Math.max(1, w * 0.003), h);
-
   ctx.restore();
+
+  // Canto: ranura oscura en el borde inferior y filo iluminado encima. Es lo que
+  // da el relieve de tabla.
+  // Sombra ancha y suave sobre el borde inferior: es lo que hace que la tabla se
+  // vea redondeada (volumen) en vez de una superficie plana con una raya.
+  const seam = Math.max(1, h * 0.02);
+  const soft = h * 0.2;
+
+  const shade = ctx.createLinearGradient(0, y + h - soft, 0, y + h);
+  shade.addColorStop(0, "rgba(70, 34, 16, 0)");
+  shade.addColorStop(0.55, "rgba(70, 34, 16, 0.1)");
+  shade.addColorStop(0.9, "rgba(60, 28, 12, 0.3)");
+  shade.addColorStop(1, "rgba(50, 22, 10, 0.44)");
+  ctx.fillStyle = shade;
+  ctx.fillRect(x, y + h - soft, w, soft);
+
+  // Ranura fina en el borde y filo iluminado justo encima.
+  ctx.fillStyle = "rgba(48, 22, 10, 0.5)";
+  ctx.fillRect(x, y + h - seam, w, seam);
+
+  ctx.fillStyle = "rgba(255, 240, 220, 0.42)";
+  ctx.fillRect(x, y + h - seam - Math.max(1, h * 0.014), w, Math.max(1, h * 0.014));
+
+  // Testa: sombra corta a la izquierda y filo claro al lado.
+  const endShadow = Math.max(1, h * 0.06);
+  const endGrad = ctx.createLinearGradient(x, 0, x + endShadow, 0);
+  endGrad.addColorStop(0, "rgba(58, 26, 12, 0.4)");
+  endGrad.addColorStop(1, "rgba(58, 26, 12, 0)");
+  ctx.fillStyle = endGrad;
+  ctx.fillRect(x, y, endShadow, h);
+  ctx.fillStyle = "rgba(255, 238, 216, 0.3)";
+  ctx.fillRect(x + endShadow, y, Math.max(1, h * 0.014), h);
 }
 
 // ---------------------------------------------------------------------------
@@ -214,18 +229,31 @@ function createFloorCanvas(lengthMeters, widthMeters, px, shadows) {
   ctx.fillStyle = hsl(BASE_HUE, BASE_SAT, BASE_LIGHT);
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  const rows = Math.ceil(canvas.height / plankW);
-  for (let r = 0; r < rows; r++) {
+  // El tendido va girado respecto a las paredes. Se dibuja sobre un cuadrado
+  // mayor, centrado, para que al girar siga cubriendo toda la textura; la
+  // oclusion ambiental se pinta despues, ya sin girar, para que siga pegada a
+  // los zocalos.
+  const angle = (PLANK_ANGLE_DEG * Math.PI) / 180;
+  const diagonal = Math.hypot(canvas.width, canvas.height);
+
+  ctx.save();
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate(angle);
+  ctx.translate(-diagonal / 2, -diagonal / 2);
+
+  const rows = Math.ceil(diagonal / plankW);
+  for (let r = 0; r <= rows; r++) {
     const y = r * plankW;
-    const h = Math.min(plankW, canvas.height - y);
-    if (h <= 0) break;
     let x = -plankL * (0.1 + rand() * 0.9);
-    while (x < canvas.width) {
-      const len = plankL * (0.62 + rand() * 0.5);
-      drawPlank(ctx, x, y, len, h, rand);
+    let guard = 0;
+    while (x < diagonal && guard++ < 400) {
+      const len = plankL * (0.75 + rand() * 0.45);
+      drawPlank(ctx, x, y, len, plankW, rand);
       x += len;
     }
   }
+
+  ctx.restore();
 
   paintShadows(ctx, canvas.width, canvas.height, shadows);
   paintAmbientOcclusion(ctx, canvas.width, canvas.height, px);

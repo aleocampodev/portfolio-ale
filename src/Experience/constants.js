@@ -72,7 +72,7 @@ export const ELEMENTS_TO_RAYCAST = [
   "rubikGroup",
   "linkedin",
   "github",
-  "itchio",
+  "x",
   "leftMonitor",
   "leftMonitorScreen",
   "whiteboard",
@@ -119,7 +119,7 @@ export const RUBIK_SCALE = 0.021432;
 // Links
 export const LINKEDIN_URL = "https://www.linkedin.com/in/joan-ramos-refusta/";
 export const GITHUB_URL = "https://github.com/jrefusta";
-export const ITCHIO_URL = "https://jrefusta.itch.io/";
+export const X_URL = "https://x.com/jrefusta";
 
 // Top Chair
 export const TOP_CHAIR_POSITION = new Vector3(1.4027, 0.496728, -1.21048);

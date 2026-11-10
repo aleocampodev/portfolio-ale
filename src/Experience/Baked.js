@@ -1,11 +1,21 @@
 import {
+  BufferAttribute,
+  CanvasTexture,
   DirectionalLight,
   DoubleSide,
+  Group,
   Mesh,
+  ExtrudeGeometry,
   MeshBasicMaterial,
   PCFSoftShadowMap,
+  Path,
+  PlaneGeometry,
+  Shape,
+  ShapeGeometry,
+  Quaternion,
   SRGBColorSpace,
   ShadowMaterial,
+  Vector3,
 } from "three";
 import Experience from "./Experience.js";
 import { applyFloorWood } from "./Utils/FloorWoodTexture.js";
@@ -109,13 +119,7 @@ export default class Baked {
       this.scene.add(this.model.github);
     }
 
-    if (this.resources.items.itchio) {
-      this.model.itchio = this.resources.items.itchio.scene;
-      this.model.itchio.name = "itchio";
-      this.setMaterial(this.model.itchio, this.model.material3);
-      this.scene.add(this.model.itchio);
-    }
-
+    this.model.room2 = this.resources.items._roomModel2.scene;
     this.setMaterial(this.model.room2, this.model.material2);
     this.setMaterial(this.model.room3, this.model.material3);
 
@@ -123,7 +127,304 @@ export default class Baked {
     this.scene.add(this.model.room2);
     this.scene.add(this.model.room3);
 
+    // La cara de la X que se anadio en Blender es solo para el .blend; en la web
+    // la chapa se pinta con su propia textura, asi que se quita del modelo.
+    const bakedHelpers = ["X_Cara", "X_Logo3D"];
+    bakedHelpers.forEach((name) => {
+      const obj = this.model.room3 && this.model.room3.getObjectByName(name);
+      if (obj) obj.removeFromParent();
+    });
+
+    this.setLogoX();
+
+    // Eliminar silueta horneada duplicada de Github en room3:
+    const bakedGithub = this.model.room3 && this.model.room3.getObjectByName("Github");
+    if (bakedGithub) {
+      bakedGithub.removeFromParent();
+    }
+
     this.setShadows();
+  };
+
+  /**
+   * El antiguo logo de itch.io pasa a ser el logo de X.
+   *
+   * `room3.glb` trae horneada la chapa del logo de itch.io: misma forma, tamano
+   * y sitio en la pared que las de LinkedIn y GitHub. Se reutiliza esa misma
+   * pieza (asi encaja perfecta en la rejilla de la pared) quitandola del modelo
+   * horneado y dandole una textura propia con la X.
+   *
+   * El `x.glb` exportado aparte no se usa: su malla llega sin la cara frontal y
+   * sus UV apuntan a una zona negra de `baked3` (el atlas se horneo antes de que
+   * existiera la X), asi que se veia como un cuadrado negro.
+   */
+  setLogoX = () => {
+    // El objeto se llama "X" en el .blend actual; "Itchio" es el nombre antiguo.
+    const plate =
+      this.model.room3 &&
+      (this.model.room3.getObjectByName("X") ||
+        this.model.room3.getObjectByName("Itchio"));
+    if (!plate) return;
+
+    // La chapa y el logo 3D de X ya vienen modelados e integrados en room3.glb
+    // con su placa base blanca/clara y el logo extruido en 3D con volumen idéntico a LinkedIn.
+    // Mantenemos su material horneado para que el fondo y las sombras de luz coincidan al 100%,
+    // y nombramos el objeto y su grupo 'x' para que la navegación por click funcione directamente.
+    // La chapa se saca de room3 (donde el atlas la deja negra) y se cuelga de un
+    // grupo "x" sobre el centro real de su malla, con su propia textura dibujada.
+    plate.updateWorldMatrix(true, false);
+    plate.geometry.computeBoundingBox();
+    const bounds = plate.geometry.boundingBox
+      .clone()
+      .applyMatrix4(plate.matrixWorld);
+    const center = bounds.getCenter(new Vector3());
+    const size = plate.geometry.boundingBox.getSize(new Vector3());
+    const worldQuaternion = plate.getWorldQuaternion(new Quaternion());
+    // La chapa solo tiene marco: su centro cae dentro de la pared, asi que el
+    // plano se adelanta media chapa hacia la sala (el grosor va en el eje Y
+    // local de la malla).
+    const normal = new Vector3(0, 1, 0).applyQuaternion(worldQuaternion);
+
+    plate.name = "x";
+    plate.visible = false;
+
+    const group = new Group();
+    group.name = "x";
+    group.position.copy(center).addScaledVector(normal, size.y / 2 + 0.004);
+    group.quaternion.copy(worldQuaternion);
+    this.scene.add(group);
+
+    // La chapa horneada ya trae el marco de madera (igual que LinkedIn y
+    // GitHub); el plano solo tiene que tapar su cara negra interior.
+    const side = Math.max(size.x, size.y, size.z) * 0.98;
+    const plane = new Mesh(
+      new PlaneGeometry(side, side),
+      new MeshBasicMaterial({
+        map: this.createLogoXTexture(),
+        transparent: true,
+        side: DoubleSide,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        polygonOffsetUnits: -2,
+      })
+    );
+    plane.name = "x";
+    plane.rotation.x = -Math.PI / 2;
+    group.add(plane);
+
+    const logoShadow = this.createLogoXShadow();
+    logoShadow.name = "x";
+    logoShadow.rotation.x = -Math.PI / 2;
+    logoShadow.position.set(0.008, 0.002, 0.008);
+    group.add(logoShadow);
+
+    const logo3d = this.createLogoXMesh();
+    logo3d.name = "x";
+    logo3d.rotation.x = -Math.PI / 2;
+    logo3d.position.y = 0.006;
+    group.add(logo3d);
+
+    this.model.x = group;
+  };
+
+  /** UV planas para la chapa: la cara del logo vive en el plano local X/Z. */
+  getPlateUvs = (geometry) => {
+    geometry.computeBoundingBox();
+    const { min, max } = geometry.boundingBox;
+    const width = max.x - min.x || 1;
+    const height = max.z - min.z || 1;
+    const position = geometry.attributes.position;
+    const uv = new Float32Array(position.count * 2);
+
+    for (let i = 0; i < position.count; i++) {
+      uv[i * 2] = (position.getX(i) - min.x) / width;
+      uv[i * 2 + 1] = (position.getZ(i) - min.z) / height;
+    }
+
+    return new BufferAttribute(uv, 2);
+  };
+
+  /**
+   * Textura del logo de X, dibujada al vuelo.
+   *
+   * Reproduce el aspecto de las otras chapas (marco biselado oscuro y cara
+   * clara) para que las tres se lean como una serie, con la X en el centro.
+   */
+  createLogoXTexture = () => {
+    const size = 512;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+
+    // Marco de madera, con la misma proporcion que el de LinkedIn y GitHub.
+    const frame = ctx.createLinearGradient(0, 0, size * 0.25, size);
+    frame.addColorStop(0, "#5d4a37");
+    frame.addColorStop(0.45, "#4b3a2b");
+    frame.addColorStop(1, "#3a2d21");
+    ctx.fillStyle = frame;
+    ctx.beginPath();
+    ctx.roundRect(0, 0, size, size, size * 0.1);
+    ctx.fill();
+
+    // vetas muy suaves del marco
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(0, 0, size, size, size * 0.1);
+    ctx.clip();
+    for (let i = 0; i < 26; i++) {
+      const y = (i / 26) * size + (Math.random() - 0.5) * 6;
+      ctx.strokeStyle =
+        i % 2 === 0 ? "rgba(120, 96, 70, 0.10)" : "rgba(30, 22, 16, 0.10)";
+      ctx.lineWidth = 1 + Math.random() * 2;
+      ctx.beginPath();
+      ctx.moveTo(-10, y);
+      ctx.bezierCurveTo(size * 0.3, y + 5, size * 0.7, y - 5, size + 10, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Panel interior con volumen: sombra suave abajo-derecha y filo iluminado
+    // arriba, como el hueco donde van los iconos de las otras chapas.
+    const pad = size * 0.115;
+    const radius = size * 0.03;
+    ctx.save();
+    ctx.shadowColor = "rgba(92, 68, 44, 0.34)";
+    ctx.shadowBlur = size * 0.022;
+    ctx.shadowOffsetX = size * 0.004;
+    ctx.shadowOffsetY = size * 0.009;
+    const panel = ctx.createLinearGradient(0, pad, 0, size - pad);
+    panel.addColorStop(0, "#f5ecdc");
+    panel.addColorStop(1, "#e2d3bd");
+    ctx.fillStyle = panel;
+    ctx.beginPath();
+    ctx.roundRect(pad, pad, size - pad * 2, size - pad * 2, radius);
+    ctx.fill();
+    ctx.restore();
+
+    // Filo claro del panel (arriba-izquierda) y sombra fina (abajo-derecha).
+    ctx.lineWidth = size * 0.009;
+    ctx.strokeStyle = "rgba(255, 252, 244, 0.55)";
+    ctx.beginPath();
+    ctx.moveTo(pad + radius * 0.4, pad + size * 0.004);
+    ctx.lineTo(size - pad - radius * 0.4, pad + size * 0.004);
+    ctx.lineTo(pad + size * 0.004, pad + radius * 0.4);
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(86, 62, 40, 0.35)";
+    ctx.beginPath();
+    ctx.moveTo(pad + radius * 0.4, size - pad - size * 0.004);
+    ctx.lineTo(size - pad - radius * 0.4, size - pad - size * 0.004);
+    ctx.lineTo(size - pad - size * 0.004, pad + radius * 0.4);
+    ctx.stroke();
+
+    // La X no se pinta aqui: va como pieza 3D extruida delante de la cara.
+    const texture = new CanvasTexture(canvas);
+    texture.colorSpace = SRGBColorSpace;
+    texture.anisotropy = this.maxAnisotropy;
+    texture.needsUpdate = true;
+    return texture;
+  };
+
+  /**
+   * X en 3D: el mismo trazado oficial, extruido, para que tenga profundidad y
+   * no se vea como una calcomania plana.
+   */
+  createLogoXMesh = () => {
+    const outline = [
+      [18.901, 1.153], [22.581, 1.153], [14.541, 10.343], [24, 22.846],
+      [16.594, 22.846], [10.794, 15.262], [4.156, 22.846], [0.474, 22.846],
+      [9.074, 13.016], [0, 1.154], [7.594, 1.154], [12.837, 8.086],
+    ];
+    const holePoints = [
+      [17.61, 20.644], [19.649, 20.644], [6.486, 3.24], [4.298, 3.24],
+    ];
+
+    const cx = 12;
+    const cy = 12;
+    const toX = (p) => p[0] - cx;
+    const toY = (p) => cy - p[1];
+
+    const shape = new Shape();
+    outline.forEach((p, i) => {
+      if (i === 0) shape.moveTo(toX(p), toY(p));
+      else shape.lineTo(toX(p), toY(p));
+    });
+    shape.closePath();
+
+    const hole = new Path();
+    holePoints.forEach((p, i) => {
+      if (i === 0) hole.moveTo(toX(p), toY(p));
+      else hole.lineTo(toX(p), toY(p));
+    });
+    hole.closePath();
+    shape.holes.push(hole);
+
+    const geometry = new ExtrudeGeometry(shape, {
+      depth: 3.4,
+      bevelEnabled: true,
+      bevelThickness: 0.45,
+      bevelSize: 0.45,
+      bevelSegments: 2,
+      steps: 1,
+    });
+
+    // 24 unidades del trazado = 0.36 m en la sala.
+    const scale = 0.36 / 24;
+    geometry.scale(scale, scale, scale);
+
+    // Cara casi negra y cantos mas claros: al ser una escena sin luces, el tono
+    // del canto es lo que hace que se lea el grosor.
+    const mesh = new Mesh(geometry, [
+      new MeshBasicMaterial({ color: 0x121212 }),
+      new MeshBasicMaterial({ color: 0x6b665d }),
+    ]);
+    mesh.castShadow = true;
+    return mesh;
+  };
+
+  /**
+   * Sombra de contacto de la X sobre la chapa: una copia plana del trazado,
+   * desplazada, que hace que el logo despegue del fondo.
+   */
+  createLogoXShadow = () => {
+    const outline = [
+      [18.901, 1.153], [22.581, 1.153], [14.541, 10.343], [24, 22.846],
+      [16.594, 22.846], [10.794, 15.262], [4.156, 22.846], [0.474, 22.846],
+      [9.074, 13.016], [0, 1.154], [7.594, 1.154], [12.837, 8.086],
+    ];
+    const holePoints = [
+      [17.61, 20.644], [19.649, 20.644], [6.486, 3.24], [4.298, 3.24],
+    ];
+
+    const shape = new Shape();
+    outline.forEach((p, i) => {
+      if (i === 0) shape.moveTo(p[0] - 12, 12 - p[1]);
+      else shape.lineTo(p[0] - 12, 12 - p[1]);
+    });
+    shape.closePath();
+
+    const hole = new Path();
+    holePoints.forEach((p, i) => {
+      if (i === 0) hole.moveTo(p[0] - 12, 12 - p[1]);
+      else hole.lineTo(p[0] - 12, 12 - p[1]);
+    });
+    hole.closePath();
+    shape.holes.push(hole);
+
+    const geometry = new ShapeGeometry(shape, 8);
+    const scale = 0.36 / 24;
+    geometry.scale(scale, scale, scale);
+
+    return new Mesh(
+      geometry,
+      new MeshBasicMaterial({
+        color: 0x2a2118,
+        transparent: true,
+        opacity: 0.22,
+        depthWrite: false,
+      })
+    );
   };
 
   /**
@@ -151,7 +452,7 @@ export default class Baked {
 
     // Solo los objetos proyectan. Los muros y el suelo no, porque taparian la
     // luz y la sala entera quedaria en sombra (no hay techo).
-    [this.model.room2, this.model.room3, this.model.linkedin, this.model.github, this.model.itchio].forEach(
+    [this.model.room2, this.model.room3, this.model.linkedin, this.model.github, this.model.x].forEach(
       (root) => {
         if (!root) return;
         root.traverse((child) => {

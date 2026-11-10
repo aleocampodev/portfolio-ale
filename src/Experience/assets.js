@@ -41,14 +41,15 @@ export default [
         source: "/assets/textures/texture_paint.png",
         type: "texture",
       },
-      { name: "_roomModel", source: "/assets/models/room.glb" },
-      { name: "_roomModel2", source: "/assets/models/room2.glb" },
-      { name: "_roomModel3", source: "/assets/models/room3.glb" },
+      // ?v= se sube cada vez que se re-exporta el .blend para saltar la cache
+      // del navegador (la ruta es la misma, el contenido cambia).
+      { name: "_roomModel", source: "/assets/models/room.glb?v=20261110c" },
+      { name: "_roomModel2", source: "/assets/models/room2.glb?v=20261110c" },
+      { name: "_roomModel3", source: "/assets/models/room3.glb?v=20261110c" },
       { name: "whiteboard", source: "/assets/models/whiteboard.glb" },
       { name: "leftMonitor", source: "/assets/models/leftMonitor.glb" },
       { name: "linkedin", source: "/assets/models/linkedin.glb" },
       { name: "github", source: "/assets/models/github.glb" },
-      { name: "itchio", source: "/assets/models/itchio.glb" },
       {
         name: "cubeTexture",
         source: [

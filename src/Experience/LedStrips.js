@@ -56,6 +56,16 @@ const SEGMENTS = [
     b: [WALL_X, SKIRT_TOP, ROOM_MAX_Z],
     normal: [-1, 0, 0],
   },
+  {
+    // Bajo la repisa de libros: derrama luz hacia el escritorio.
+    name: "shelf-underside",
+    a: [0.88, 4.21, -4.22],
+    b: [3.86, 4.21, -4.22],
+    normal: [0, 0, 1],
+    glowDown: true,
+    glowHeight: 0.34,
+    glowOpacity: 0.26,
+  },
   // El canto frontal del escritorio queda descartado por ahora: al estar el
   // tablero por delante del respaldo de la silla, la tira se lee como una linea
   // flotante cruzando la silla en vez de como luz bajo el escritorio.
@@ -122,8 +132,10 @@ export default class LedStrips {
       core.matrix.copy(basis).scale(scale).setPosition(origin);
       core.renderOrder = 3;
 
-      // Halo: arranca en la tira y se apaga hacia fuera.
+      // Halo: arranca en la tira y se apaga hacia fuera. Con glowDown el
+      // gradiente se invierte para que la luz caiga por debajo de la repisa.
       const glowHeight = segment.glowHeight || GLOW_HEIGHT;
+      const direction = segment.glowDown ? -1 : 1;
       const glowMaterial = new MeshBasicMaterial({
         color: GLOW_COLOR,
         map: this.glowTexture,
@@ -140,8 +152,10 @@ export default class LedStrips {
       glow.matrixAutoUpdate = false;
       glow.matrix
         .copy(basis)
-        .scale(new Vector3(length, glowHeight, 1))
-        .setPosition(origin.clone().addScaledVector(up, glowHeight / 2));
+        .scale(new Vector3(length, glowHeight * direction, 1))
+        .setPosition(
+          origin.clone().addScaledVector(up, (glowHeight / 2) * direction)
+        );
       glow.renderOrder = 2;
 
       this.group.add(core, glow);

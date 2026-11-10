@@ -55,13 +55,14 @@ export_objects(os.path.join(models_dir, 'room.glb'), ['BAKED_1', 'Floor', 'Claqu
 # room2.glb: BAKED_2 contiene el escritorio y monitores
 export_objects(os.path.join(models_dir, 'room2.glb'), ['BAKED_2', 'BAKED_2.001', 'LeftMonitor'])
 # room3.glb: BAKED_3 contiene repisas, libros y logos
-export_objects(os.path.join(models_dir, 'room3.glb'), ['BAKED_3', 'Cover', 'Interior', 'Github', 'Linkedin', 'Itchio'])
+export_objects(os.path.join(models_dir, 'room3.glb'), ['BAKED_3', 'Cover', 'Interior', 'Github', 'Linkedin', 'X'])
 export_objects(os.path.join(models_dir, 'topChair.glb'), ['TopChair'])
 export_objects(os.path.join(models_dir, 'whiteboard.glb'), ['Whiteboard', 'Whiteboard_Canvas'])
 export_objects(os.path.join(models_dir, 'Rubik.glb'), ['Cube', 'RubiksCube'])
 export_objects(os.path.join(models_dir, 'github.glb'), ['Github'])
 export_objects(os.path.join(models_dir, 'linkedin.glb'), ['Linkedin'])
-export_objects(os.path.join(models_dir, 'itchio.glb'), ['Itchio'])
+# El logo de X no se exporta: se construye en el cliente reutilizando la chapa
+# horneada de itch.io (ver Baked.setLogoX).
 
 # 3. Estado de alfombra (físicamente eliminada)
 carpet_objs = [o for o in bpy.data.objects if 'carpet' in o.name.lower()]

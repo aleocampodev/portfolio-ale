@@ -46,15 +46,23 @@ export const MONITOR_SCREEN_WIDTH = 1370.178;
 export const MONITOR_SCREEN_HEIGHT = 764.798;
 export const MONITOR_IFRAME_PADDING = "8px";
 
-// Left Monitor
+// Left Monitor (centrado sobre el mousepad/teclado en X = 1.5238 y ampliado 1.22x desde su base Y = 1.9196)
 export const LEFT_MONITOR_CSS_OBJECT_POSITION = new Vector3(
-  1.06738,
-  2.50725,
+  1.523816,
+  2.636533,
   -4.23009
 );
-export const LEFT_MONITOR_CSS_OBJECT_SCALE = new Vector3(0.00102, 0.00102, 1);
+export const LEFT_MONITOR_CSS_OBJECT_SCALE = new Vector3(
+  0.0012444,
+  0.0012444,
+  1
+);
 export const LEFT_MONITOR_IFRAME_SRC = "https://joan-os.vercel.app";
-export const LEFT_MONITOR_CAMERA_POSITION = new Vector3(1.06738, 2.60725, -1.6);
+export const LEFT_MONITOR_CAMERA_POSITION = new Vector3(
+  1.523816,
+  2.74,
+  -1.25
+);
 export const LEFT_MONITOR_CAMERA_QUATERNION = new Quaternion(
   0,
   -0.06458455890406237,
@@ -62,14 +70,13 @@ export const LEFT_MONITOR_CAMERA_QUATERNION = new Quaternion(
   0.9979122380005006
 );
 export const LEFT_MONITOR_CAMERA_TARGET = new Vector3(
-  1.06738,
-  2.50725,
+  1.523816,
+  2.636533,
   -4.23009
 );
 
 // Navigate
 export const ELEMENTS_TO_RAYCAST = [
-  "rubikGroup",
   "linkedin",
   "github",
   "x",

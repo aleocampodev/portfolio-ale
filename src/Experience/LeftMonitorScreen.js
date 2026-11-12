@@ -45,9 +45,20 @@ export default class LeftMonitorScreen {
   setModel() {
     this.model.mesh = this.resources.items.leftMonitor.scene;
 
+    const monitorScale = 1.22;
+    const baseY = 1.9196;
+    const pivotZ = -4.23009;
+    const targetCenterX = 1.524;
+
     this.model.mesh.traverse((child) => {
       if (child.isMesh) {
         child.material = this.materialLeftMonitor;
+        child.scale.set(monitorScale, monitorScale, monitorScale);
+        child.position.set(
+          targetCenterX,
+          baseY + monitorScale * (2.4949019 - baseY),
+          pivotZ + monitorScale * (-4.2160082 - pivotZ)
+        );
       }
     });
     this.model.mesh.name = "leftMonitor";

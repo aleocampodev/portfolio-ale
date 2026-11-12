@@ -9,6 +9,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   PlaneGeometry,
+  PointLight,
   SRGBColorSpace,
   Vector3,
 } from "three";
@@ -65,12 +66,16 @@ const LED_Y = 0.258;
 
 const SEGMENTS = [
   {
+    // Tira LED en el zócalo a lo largo de toda la pared trasera detrás del escritorio:
+    // Baña de luz cálida el borde de la pared del escritorio de punta a punta.
     name: "skirting-back",
     a: [ROOM_MIN_X, LED_Y, WALL_Z],
     b: [WALL_X, LED_Y, WALL_Z],
     normal: [0, 0, 1],
     floorGlow: true,
     lipGlow: true,
+    wallGlowHeight: 0.35,
+    wallGlowOpacity: 0.35,
     gap: SKIRTING_GAP,
   },
   {
@@ -80,21 +85,47 @@ const SEGMENTS = [
     normal: [-1, 0, 0],
     floorGlow: true,
     lipGlow: true,
+    wallGlowHeight: 0.35,
+    wallGlowOpacity: 0.35,
     gap: SKIRTING_GAP,
   },
+  // El lado x = ROOM_MIN_X no tiene pared (la habitacion solo cierra por el
+  // fondo y la derecha), asi que ahi no hay zocalo: una tira en ese eje quedaba
+  // flotando sobre el canto de la plataforma del piso. No se define.
   {
-    // Bajo la repisa de libros: derrama luz hacia el escritorio.
+    // Pegada a la pared trasera bajo toda la tabla de la repisa (Z = WALL_Z + 0.01 = -4.65):
+    // derrama un resplandor cálido ámbar/dorado amplio e intenso hacia la pared y el escritorio.
     name: "shelf-underside",
-    a: [0.88, 4.21, -4.22],
-    b: [3.86, 4.21, -4.22],
+    a: [0.05, 4.10, -4.65],
+    b: [3.88, 4.10, -4.65],
     normal: [0, 0, 1],
     glowDown: true,
-    wallGlowHeight: 0.3,
-    wallGlowOpacity: 0.2,
+    wallGlowHeight: 0.95,
+    wallGlowOpacity: 0.85,
   },
-  // El canto frontal del escritorio queda descartado: al estar el tablero por
-  // delante del respaldo de la silla, la tira se lee como una linea flotante
-  // cruzando la silla en vez de como luz bajo el escritorio.
+  {
+    // Tira LED cálida en la unión de la cajonera blanca y el escritorio con la pared trasera:
+    // Abarca desde el extremo izquierdo de la cajonera (X = -1.22m) hasta la esquina derecha
+    // del escritorio (X = 3.95m), bañando de luz dorada ascendente (+Y) la pared detrás de ambos.
+    name: "desk-wall-back",
+    a: [-1.22, 1.925, -4.648],
+    b: [3.95, 1.925, -4.648],
+    normal: [0, 0, 1],
+    wallGlowHeight: 0.85,
+    wallGlowOpacity: 0.70,
+    gap: 0.008,
+  },
+  {
+    // Tira LED cálida en la unión del retorno derecho del escritorio con la pared lateral derecha:
+    // Baña de luz dorada ascendente (+Y) la pared lateral derecha bajo la repisa de figuras.
+    name: "desk-wall-right",
+    a: [3.988, 1.925, -1.000],
+    b: [3.988, 1.925, -4.648],
+    normal: [-1, 0, 0],
+    wallGlowHeight: 0.75,
+    wallGlowOpacity: 0.60,
+    gap: 0.008,
+  },
 ];
 
 export default class LedStrips {
@@ -244,6 +275,25 @@ export default class LedStrips {
         this.group.add(floorGlow);
       }
     });
+
+    // Iluminación cálida dorada/ámbar proyectada desde la base del estante
+    const shelfPointLight = new PointLight(0xffa83b, 4.2, 5.5, 1.3);
+    shelfPointLight.position.set(2.0, 3.95, -4.30);
+    this.group.add(shelfPointLight);
+
+    // Plano horizontal emisivo cálido en la cara inferior de la repisa (Y = 4.095)
+    // para que el estante se lea encendido y radiante desde la vista isométrica
+    const underShelfGeom = new PlaneGeometry(3.85, 0.75);
+    const underShelfMat = new MeshBasicMaterial({
+      color: new Color(1.0, 0.62, 0.22).multiplyScalar(2.8),
+      toneMapped: false,
+      side: DoubleSide,
+    });
+    const underShelfMesh = new Mesh(underShelfGeom, underShelfMat);
+    underShelfMesh.name = "led-under-shelf-board";
+    underShelfMesh.rotation.x = Math.PI / 2;
+    underShelfMesh.position.set(1.95, 4.095, -4.20);
+    this.group.add(underShelfMesh);
 
     this.scene.add(this.group);
   };

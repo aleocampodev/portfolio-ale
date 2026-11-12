@@ -15,14 +15,26 @@ import Experience from "./Experience.js";
 // flotando sin apoyo. Estos discos con degradado radial le devuelven el contacto
 // con el piso sin tocar la malla horneada.
 
-const Y = 0.016; // por encima del piso (0.007) y del plano de sombras (0.011)
+const Y = 0.049; // justo encima del tapete (0.047) y del piso (0.0095)
 
 const CONTACTS = [
   {
     name: "puff",
     position: [-3.55, Y, 2.8],
     size: [3.1, 2.9],
-    opacity: 0.65,
+    opacity: 0.36,
+  },
+  {
+    name: "coffee-table",
+    position: [-1.35, Y, 1.98],
+    size: [1.5, 1.5],
+    opacity: 0.28,
+  },
+  {
+    name: "floor-lamp",
+    position: [3.52, 0.014, 2.35],
+    size: [0.95, 0.95],
+    opacity: 0.45,
   },
 ];
 

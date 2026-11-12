@@ -24,6 +24,9 @@ module.exports = merge(
             disableHostCheck: true,
             overlay: true,
             noInfo: true,
+            headers: {
+                "Cache-Control": "no-store, no-cache, must-revalidate"
+            },
             after: function(app, server, compiler)
             {
                 const port = server.options.port

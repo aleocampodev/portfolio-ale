@@ -8,7 +8,6 @@ export default [
         source: "/assets/models/topChair.glb",
         type: "model",
       },
-      { name: "rubiksCube", source: "/assets/models/Rubik.glb" },
       {
         name: "skyTexture",
         source: "/assets/textures/skyTexture.ktx2",
@@ -28,7 +27,7 @@ export default [
       },
       {
         name: "baked2",
-        source: "/assets/textures/baked2.ktx2",
+        source: "/assets/textures/baked2_clean.webp?v=20261110desk4",
         type: "texture",
       },
       {
@@ -43,9 +42,9 @@ export default [
       },
       // ?v= se sube cada vez que se re-exporta el .blend para saltar la cache
       // del navegador (la ruta es la misma, el contenido cambia).
-      { name: "_roomModel", source: "/assets/models/room.glb?v=20261110c" },
-      { name: "_roomModel2", source: "/assets/models/room2.glb?v=20261110c" },
-      { name: "_roomModel3", source: "/assets/models/room3.glb?v=20261110c" },
+      { name: "_roomModel", source: "/assets/models/room.glb?v=20261110f" },
+      { name: "_roomModel2", source: "/assets/models/room2.glb?v=20261110f" },
+      { name: "_roomModel3", source: "/assets/models/room3.glb?v=20261110f" },
       { name: "whiteboard", source: "/assets/models/whiteboard.glb" },
       { name: "leftMonitor", source: "/assets/models/leftMonitor.glb" },
       { name: "linkedin", source: "/assets/models/linkedin.glb" },

@@ -199,8 +199,6 @@ export default class Navigation {
     if (
       this.currentStage == null &&
       !this.isCameraMoving &&
-      this.experience.world?.rubiksCube?.isPlaced &&
-      !this.experience.world?.confetti?.hasExploded &&
       this.experience.world.resources.loader.resourcesLoaded
     ) {
       this.checkIntersection();

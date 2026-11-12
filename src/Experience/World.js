@@ -1,18 +1,15 @@
 import EventEmitter from "./Utils/EventEmitter.js";
 import Experience from "./Experience.js";
 import Baked from "./Baked.js";
-import CoffeeSteam from "./CoffeeSteam.js";
+import PlankFloor from "./PlankFloor.js";
+import Carpet from "./Carpet.js";
 import Skybox from "./Skybox.js";
 import TopChair from "./TopChair.js";
 import Whiteboard from "./Whiteboard.js";
 import LeftMonitorScreen from "./LeftMonitorScreen.js";
-import RubiksCube from "./RubiksCube.js";
-import Confetti from "./Confetti.js";
 import AudioManager from "./AudioManager.js";
 import LedStrips from "./LedStrips.js";
 import ContactShadows from "./ContactShadows.js";
-
-import { RUBIK_POSITION, RUBIK_SCALE } from "./constants.js";
 
 export default class World extends EventEmitter {
   constructor(_options) {
@@ -26,6 +23,8 @@ export default class World extends EventEmitter {
       if (_group.name === "base") {
         this.setAudioManager();
         this.setBaked();
+        this.setPlankFloor();
+        this.setCarpet();
 
         this.setContactShadows();
         this.setLedStrips();
@@ -34,9 +33,6 @@ export default class World extends EventEmitter {
 
         this.setLeftMonitorScreen();
         this.setSkybox();
-        this.setConfetti();
-        this.setCoffeeSteam();
-        this.setRubiksCube();
 
         // Trigger worldready so Preloader dismisses the cover
         this.trigger("worldready");
@@ -48,6 +44,14 @@ export default class World extends EventEmitter {
     this.baked = new Baked();
   }
 
+  setPlankFloor() {
+    this.plankFloor = new PlankFloor();
+  }
+
+  setCarpet() {
+    this.carpet = new Carpet();
+  }
+
   setContactShadows() {
     this.contactShadows = new ContactShadows();
   }
@@ -56,24 +60,12 @@ export default class World extends EventEmitter {
     this.ledStrips = new LedStrips();
   }
 
-  setRubiksCube() {
-    this.rubiksCube = new RubiksCube(RUBIK_POSITION, RUBIK_SCALE);
-  }
-
   setSkybox() {
     this.skybox = new Skybox();
   }
 
-  setCoffeeSteam() {
-    this.coffeeSteam = new CoffeeSteam();
-  }
-
   setTopChair() {
     this.topChair = new TopChair();
-  }
-
-  setConfetti() {
-    this.confetti = new Confetti();
   }
 
   setWhiteboard() {
@@ -90,12 +82,9 @@ export default class World extends EventEmitter {
   resize() {}
 
   update() {
-    if (this.coffeeSteam) this.coffeeSteam.update();
     if (this.topChair) this.topChair.update();
-    if (this.rubiksCube) this.rubiksCube.update();
     if (this.skybox) this.skybox.update();
     if (this.leftMonitorScreen) this.leftMonitorScreen.update();
-    if (this.confetti) this.confetti.update();
     if (this.whiteboard) this.whiteboard.update();
   }
 
